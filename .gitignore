@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+*/dist/
+build/
+*/build/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Database
+*.db
+*.sqlite
+pgdata/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test coverage
+coverage/
+
+# Vite
+.vite/
