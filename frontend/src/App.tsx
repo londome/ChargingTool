@@ -6,6 +6,9 @@ import TourUpload from './pages/upload/TourUpload';
 import FleetResults from './pages/results/FleetResults';
 import TourResults from './pages/results/TourResults';
 import InfrastructureResults from './pages/results/InfrastructureResults';
+import ReichweitenResults from './pages/results/ReichweitenResults';
+import OptimizationResults from './pages/results/OptimizationResults';
+import ArbitrageResults from './pages/results/ArbitrageResults';
 import ScenarioManager from './pages/scenarios/ScenarioManager';
 import EVLibrary from './pages/evLibrary/EVLibrary';
 
@@ -23,6 +26,9 @@ export default function App() {
           <Route path="projekte/:projectId/ergebnisse" element={<FleetResults />} />
           <Route path="projekte/:projectId/ergebnisse/touren" element={<TourResults />} />
           <Route path="projekte/:projectId/ergebnisse/infrastruktur" element={<InfrastructureResults />} />
+          <Route path="projekte/:projectId/ergebnisse/reichweiten" element={<ReichweitenResults />} />
+          <Route path="projekte/:projectId/ergebnisse/optimierung" element={<OptimizationResults />} />
+          <Route path="projekte/:projectId/ergebnisse/arbitrage" element={<ArbitrageResults />} />
           <Route path="projekte/:projectId/szenarien" element={<ScenarioManager />} />
           <Route path="ergebnisse" element={<FleetResults />} />
           <Route path="fahrzeuge" element={<EVLibrary />} />

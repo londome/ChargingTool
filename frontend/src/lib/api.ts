@@ -338,6 +338,105 @@ export function useSimulationSummary(runId: string | undefined) {
 }
 
 // ============================================================
+// REICHWEITEN SIMULATOR
+// ============================================================
+
+export interface ReichweitenRouteResult {
+  route_id: string;
+  route_name: string | null;
+  distance_km: number;
+  feasibility: string;
+  soc_arrival_pct: number;
+  energy_needed_kwh: number;
+  max_range_km: number;
+  range_margin_km: number;
+}
+
+export interface ReichweitenEVResult {
+  ev_model_id: string;
+  ev_model_name: string;
+  manufacturer: string;
+  segment: string;
+  battery_kwh: number;
+  consumption_kwh_100km: number;
+  max_range_km: number;
+  route_results: ReichweitenRouteResult[];
+  summary: {
+    total_routes: number;
+    feasible: number;
+    feasible_pct: number;
+    not_feasible: number;
+  };
+}
+
+export interface ReichweitenSimulationResult {
+  project_id: string;
+  soc_start: number;
+  soc_min: number;
+  /** EVs explicitly chosen by the user */
+  selected_ev_results: ReichweitenEVResult[];
+  /** Top EVs not selected, sorted by feasibility % */
+  recommended_ev_results: ReichweitenEVResult[];
+  has_selection: boolean;
+  routes_count: number;
+  created_at: string;
+}
+
+export function useRunReichweitenSimulation() {
+  return useMutation({
+    mutationFn: ({ project_id, selected_ev_ids = [] }: { project_id: string; selected_ev_ids?: string[] }) =>
+      apiFetch<{ run_id: string; status: string }>('/reichweiten/run', {
+        method: 'POST',
+        body: JSON.stringify({ project_id, selected_ev_ids }),
+      }),
+  });
+}
+
+export function useReichweitenStatus(runId: string | null) {
+  return useQuery({
+    queryKey: ['reichweiten', 'status', runId],
+    queryFn: () => apiFetch<{ id: string; status: string; error_message?: string }>(
+      `/reichweiten/${runId}/status`
+    ),
+    enabled: !!runId,
+    refetchInterval: (query) => {
+      const data = query.state.data as { status: string } | undefined;
+      if (!data) return 2000;
+      return data.status === 'pending' || data.status === 'running' ? 2000 : false;
+    },
+  });
+}
+
+export function useReichweitenResults(runId: string | null) {
+  return useQuery({
+    queryKey: ['reichweiten', 'results', runId],
+    queryFn: () => apiFetch<ReichweitenSimulationResult>(`/reichweiten/${runId}/results`),
+    enabled: !!runId,
+    retry: false,
+  });
+}
+
+export function useReichweitenLatest(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['reichweiten', 'latest', projectId],
+    queryFn: () => apiFetch<{
+      run_id: string;
+      status: string;
+      results: ReichweitenSimulationResult;
+      created_at: string;
+    }>(`/reichweiten/project/${projectId}/latest`),
+    enabled: !!projectId,
+    retry: 3,
+    retryDelay: 2000,
+    refetchInterval: (query) => {
+      const status = (query.state.data as { status?: string } | undefined)?.status;
+      if (!status || status === 'pending' || status === 'running') return 2000;
+      return false;
+    },
+  });
+}
+
+// ============================================================
 // EXPORT HELPERS
 // ============================================================
 
@@ -375,6 +474,145 @@ export async function previewFile(file: File): Promise<{
   if (!res.ok) throw new Error('Preview failed');
   const json = await res.json();
   return json.data;
+}
+
+// ============================================================
+// OPTIMIZATION (Ladeprozess Optimierung)
+// ============================================================
+
+export interface OptimizationRunInput {
+  project_id: string;
+  date: string;                    // ISO date YYYY-MM-DD
+  bidding_zone: string;            // 'DE_LU', 'GB', 'NL', etc.
+  gcp_max_kw: number;
+  wallbox_power_kw: number;
+  soc_target_pct: number;
+  soc_min_pct: number;
+  arrival_time?: string;           // optional — read from routes if absent
+  departure_time?: string;         // optional — read from routes if absent
+  selected_ev_ids?: string[];      // from wizard Step 5
+}
+
+export interface VehicleOptResult {
+  vehicle_id: string;
+  vehicle_name: string;
+  schedule_kw: number[];
+  soc_curve_pct: number[];
+  energy_kwh: number;
+  cost_eur: number;
+}
+
+export interface OptimizationRunResult {
+  status: 'optimal' | 'infeasible' | 'error' | 'pending';
+  vehicles: VehicleOptResult[];
+  total_cost_eur: number;
+  total_energy_kwh: number;
+  fleet_power_kw: number[];
+  computation_time_ms: number;
+  date: string;
+  prices_15min: number[];
+  bidding_zone?: string;
+  gcp_max_kw?: number;
+}
+
+export function useRunOptimization() {
+  return useMutation({
+    mutationFn: (input: OptimizationRunInput) =>
+      apiFetch<{ run_id: string; status: string }>('/optimization/run', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+  });
+}
+
+export function useOptimizationLatest(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['optimization', 'latest', projectId],
+    queryFn: () =>
+      apiFetch<{
+        run_id: string;
+        status: string;
+        results: OptimizationRunResult;
+        prices: { prices_15min: number[]; source: string };
+        bidding_zone: string;
+        gcp_max_kw: number;
+        optimization_date: string;
+        created_at: string;
+        completed_at: string;
+      }>(`/optimization/project/${projectId}/latest`),
+    enabled: !!projectId,
+    retry: 1,
+    refetchInterval: (query) => {
+      const status = (query.state.data as { status?: string } | undefined)?.status;
+      if (!status || status === 'pending' || status === 'running') return 2000;
+      return false;
+    },
+  });
+}
+
+// ============================================================
+// ARBITRAGE (MILP Energy Arbitrage)
+// ============================================================
+
+export interface ArbitrageRunInput {
+  project_id: string;
+  date: string;
+  bidding_zone: string;
+  gcp_max_kw: number;
+  wallbox_power_kw: number;
+  soc_target_pct: number;
+  soc_min_pct: number;
+  selected_ev_ids?: string[];
+}
+
+export interface ArbitrageRunResult {
+  status: 'optimal' | 'infeasible' | 'error' | 'pending';
+  schedule_charge_kw: number[];
+  schedule_discharge_kw: number[];
+  net_grid_kw: number[];
+  soc_curve_pct: number[];
+  total_revenue_eur: number;
+  total_cost_eur: number;
+  net_profit_eur: number;
+  computation_time_ms: number;
+  date: string;
+  prices_15min: number[];
+  cycles: number;
+}
+
+export function useRunArbitrage() {
+  return useMutation({
+    mutationFn: (input: ArbitrageRunInput) =>
+      apiFetch<{ run_id: string; status: string }>('/arbitrage/run', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+  });
+}
+
+export function useArbitrageLatest(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['arbitrage', 'latest', projectId],
+    queryFn: () =>
+      apiFetch<{
+        run_id: string;
+        status: string;
+        results: ArbitrageRunResult;
+        prices: { prices_15min: number[]; source: string };
+        bidding_zone: string;
+        gcp_max_kw: number;
+        run_date: string;
+        created_at: string;
+        completed_at: string;
+      }>(`/arbitrage/project/${projectId}/latest`),
+    enabled: !!projectId,
+    retry: 1,
+    refetchInterval: (query) => {
+      const status = (query.state.data as { status?: string } | undefined)?.status;
+      if (!status || status === 'pending' || status === 'running') return 2000;
+      return false;
+    },
+  });
 }
 
 export async function uploadRoutes(

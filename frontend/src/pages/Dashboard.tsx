@@ -176,7 +176,19 @@ export default function Dashboard() {
                         {project.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-slate-900">{project.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-slate-900">{project.name}</h3>
+                          {project.wizard_module === 'reichweiten' && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                              Reichweiten Simulator
+                            </span>
+                          )}
+                          {project.wizard_module === 'ladeprozess' && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                              Ladeprozess Simulator
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-400">
                           {project.industry} · {project.depot_location} · Erstellt {formatDate(project.created_at)}
                         </p>

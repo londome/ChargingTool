@@ -28,11 +28,28 @@ CREATE TABLE IF NOT EXISTS projects (
   industry VARCHAR(100),
   depot_location VARCHAR(255),
   charging_options TEXT[] DEFAULT '{}',
+  wizard_module VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_projects_user_id ON projects(user_id);
+
+-- ============================================================
+-- REICHWEITEN RUNS (Reichweiten Simulator results)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reichweiten_runs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  selected_ev_ids JSONB DEFAULT '[]',
+  results JSONB,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_reichweiten_runs_project_id ON reichweiten_runs(project_id);
 
 -- ============================================================
 -- FLEETS

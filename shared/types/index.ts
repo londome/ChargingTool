@@ -87,6 +87,7 @@ export interface Project {
   industry: string;
   depot_location: string;
   charging_options: ChargingOption[];
+  wizard_module?: string | null;
   created_at: string;
   updated_at: string;
 }

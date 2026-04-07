@@ -70,6 +70,7 @@ router.post('/', async (req: Request, res: Response) => {
       industry,
       depot_location,
       charging_options = [],
+      wizard_module = null,
       user_id,
     } = req.body;
 
@@ -79,10 +80,10 @@ router.post('/', async (req: Request, res: Response) => {
 
     const id = uuidv4();
     const result = await query<Project>(
-      `INSERT INTO projects (id, user_id, name, country, currency, fleet_type, industry, depot_location, charging_options)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO projects (id, user_id, name, country, currency, fleet_type, industry, depot_location, charging_options, wizard_module)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [id, user_id || null, name, country, currency, fleet_type, industry, depot_location, charging_options]
+      [id, user_id || null, name, country, currency, fleet_type, industry, depot_location, charging_options, wizard_module]
     );
 
     res.status(201).json({ data: result.rows[0] });

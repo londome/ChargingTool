@@ -222,8 +222,9 @@ router.post('/manual', async (req: Request, res: Response) => {
       const id = uuidv4();
       const result = await query<Route>(
         `INSERT INTO routes (id, project_id, vehicle_id, route_id, distance_km, stops, dwell_time_min,
-          avg_speed_kmh, payload_kg, source_type, start_time, end_time, vehicle_count, trips_per_year)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'manual',$10,$11,$12,$13) RETURNING *`,
+          avg_speed_kmh, payload_kg, source_type, start_time, end_time, vehicle_count, trips_per_year,
+          sim_temperature_c, sim_hvac_on, sim_city_share, sim_rural_share, sim_hwy_share)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'manual',$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
         [
           id, project_id,
           r.vehicle_id || null,
@@ -237,6 +238,11 @@ router.post('/manual', async (req: Request, res: Response) => {
           r.end_time || null,
           r.vehicle_count || 1,
           r.trips_per_year || 250,
+          r.sim_temperature_c ?? 15,
+          r.sim_hvac_on ?? false,
+          r.sim_city_share ?? 0.5,
+          r.sim_rural_share ?? 0.3,
+          r.sim_hwy_share ?? 0.2,
         ]
       );
       inserted.push(result.rows[0]);

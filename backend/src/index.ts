@@ -11,6 +11,9 @@ import evModelsRouter from './routes/evModels';
 import scenariosRouter from './routes/scenarios';
 import simulationsRouter from './routes/simulations';
 import exportsRouter from './routes/exports';
+import reichweitenRouter from './routes/reichweiten';
+import optimizationRouter from './routes/optimization';
+import arbitrageRouter from './routes/arbitrage';
 
 dotenv.config();
 
@@ -45,6 +48,9 @@ app.use('/api/ev-models', evModelsRouter);
 app.use('/api/scenarios', scenariosRouter);
 app.use('/api/simulations', simulationsRouter);
 app.use('/api/exports', exportsRouter);
+app.use('/api/reichweiten', reichweitenRouter);
+app.use('/api/optimization', optimizationRouter);
+app.use('/api/arbitrage', arbitrageRouter);
 
 // 404 handler
 app.use((req, res) => {
@@ -69,6 +75,52 @@ async function runMigrations() {
     `ALTER TABLE scenarios ADD COLUMN IF NOT EXISTS diesel_price DECIMAL(8,4) NOT NULL DEFAULT 1.75`,
     `ALTER TABLE scenarios ADD COLUMN IF NOT EXISTS wallbox_price_eur DECIMAL(10,2) NOT NULL DEFAULT 1200`,
     `ALTER TABLE scenarios ADD COLUMN IF NOT EXISTS installation_type VARCHAR(20) NOT NULL DEFAULT 'standard'`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS wizard_module VARCHAR(50) DEFAULT NULL`,
+    `CREATE TABLE IF NOT EXISTS reichweiten_runs (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      results JSONB,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMPTZ
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_reichweiten_runs_project_id ON reichweiten_runs(project_id)`,
+    `ALTER TABLE reichweiten_runs ADD COLUMN IF NOT EXISTS selected_ev_ids JSONB DEFAULT '[]'`,
+    // Per-route driving conditions for Reichweiten simulation
+    `ALTER TABLE routes ADD COLUMN IF NOT EXISTS sim_temperature_c FLOAT DEFAULT 15`,
+    `ALTER TABLE routes ADD COLUMN IF NOT EXISTS sim_hvac_on BOOLEAN DEFAULT false`,
+    `ALTER TABLE routes ADD COLUMN IF NOT EXISTS sim_city_share FLOAT DEFAULT 0.5`,
+    `ALTER TABLE routes ADD COLUMN IF NOT EXISTS sim_rural_share FLOAT DEFAULT 0.3`,
+    `ALTER TABLE routes ADD COLUMN IF NOT EXISTS sim_hwy_share FLOAT DEFAULT 0.2`,
+    `CREATE TABLE IF NOT EXISTS optimization_runs (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      optimization_date DATE,
+      bidding_zone VARCHAR(20) DEFAULT 'DE_LU',
+      gcp_max_kw FLOAT DEFAULT 100,
+      results JSONB,
+      prices JSONB,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMPTZ
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_optimization_runs_project_id ON optimization_runs(project_id)`,
+    `CREATE TABLE IF NOT EXISTS arbitrage_runs (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      run_date DATE,
+      bidding_zone VARCHAR(20) DEFAULT 'DE_LU',
+      gcp_max_kw FLOAT DEFAULT 100,
+      results JSONB,
+      prices JSONB,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMPTZ
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_arbitrage_runs_project_id ON arbitrage_runs(project_id)`,
   ];
   for (const sql of migrations) {
     try { await query(sql); } catch (e) { console.warn('Migration skipped:', (e as Error).message); }

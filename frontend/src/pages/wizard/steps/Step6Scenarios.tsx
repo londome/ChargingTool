@@ -124,7 +124,11 @@ export default function Step6Scenarios() {
       console.warn('Offline-Modus: Simulation mit Demo-Daten', e);
     } finally {
       setIsRunning(false);
-      navigate(`/projekte/${wizard.projectId}/ergebnisse`);
+      if (wizard.wizardModule === 'ladeprozess_optimierung') {
+        setWizardStep(7);
+      } else {
+        navigate(`/projekte/${wizard.projectId}/ergebnisse`);
+      }
     }
   };
 

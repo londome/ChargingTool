@@ -12,7 +12,7 @@ import { GERMANY_INDUSTRIES, FLEET_TYPES, EUROPEAN_COUNTRIES } from '@/lib/utils
 import { ChargingOption } from '@shared/types';
 
 export default function Step1ProjectContext() {
-  const { wizard, updateWizardStep1, setWizardStep, setWizardProjectId, setActiveProject } = useProjectStore();
+  const { wizard, updateWizardStep1, setWizardStep, setWizardProjectId, setActiveProject, setWizardModule } = useProjectStore();
   const navigate = useNavigate();
   const createProject = useCreateProject();
 
@@ -35,7 +35,10 @@ export default function Step1ProjectContext() {
     };
     updateWizardStep1(mergedData);
     try {
-      const project = await createProject.mutateAsync(mergedData);
+      const project = await createProject.mutateAsync({
+        ...mergedData,
+        wizard_module: wizard.wizardModule,
+      });
       setWizardProjectId(project.id);
       setActiveProject(project);
     } catch {

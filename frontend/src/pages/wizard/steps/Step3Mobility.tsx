@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Edit, BarChart3, Plus, Trash2, CheckCircle, Loader2, Clock, Truck } from 'lucide-react';
+import { Upload, Edit, BarChart3, Plus, Trash2, CheckCircle, Loader2, Clock, Truck, Thermometer, Wind, ChevronDown, ChevronUp } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
 import { useAddManualRoutes, useClearRoutes, uploadRoutes, useCreateFleet } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FileDropzone from '@/components/shared/FileDropzone';
 import { VehicleSegment, FuelType, AcquisitionType, Fleet, FleetVehicle } from '@shared/types';
-import { getSegmentLabel, getFuelTypeLabel } from '@/lib/utils';
+import { getSegmentLabel, getFuelTypeLabel, cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +35,12 @@ interface ManualRoute {
   vehicle_count: number;
   vehicle_type_idx: number;
   trips_per_year: number;
+  // Per-route driving conditions (Reichweiten module)
+  sim_temperature_c: number;
+  sim_hvac_on: boolean;
+  sim_city_share: number;
+  sim_rural_share: number;
+  sim_hwy_share: number;
 }
 
 interface FleetEntry {
@@ -76,6 +82,11 @@ const DEFAULT_ROUTE: ManualRoute = {
   vehicle_count: 1,
   vehicle_type_idx: 0,
   trips_per_year: 250,
+  sim_temperature_c: 15,
+  sim_hvac_on: false,
+  sim_city_share: 0.5,
+  sim_rural_share: 0.3,
+  sim_hwy_share: 0.2,
 };
 
 const SEGMENTS = Object.values(VehicleSegment);
@@ -97,12 +108,18 @@ function formatHours(min: number) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Step3Mobility() {
+interface Step3MobilityProps {
+  onFinish?: () => void;
+  isFinishing?: boolean;
+}
+
+export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityProps = {}) {
   const { wizard, updateWizardStep2, setWizardFleetId, setWizardMobilityMode, setWizardStep } = useProjectStore();
   const addRoutes = useAddManualRoutes();
   const clearRoutes = useClearRoutes();
   const createFleet = useCreateFleet();
 
+  const isReichweitenMode = wizard.wizardModule === 'reichweiten';
   const [tab, setTab] = useState<string>(wizard.step3MobilityMode ?? 'manual');
 
   // ── Manual tab state ─────────────────────────────────────────────────────
@@ -110,6 +127,7 @@ export default function Step3Mobility() {
   const [manualRoutes, setManualRoutes] = useState<ManualRoute[]>([
     { ...DEFAULT_ROUTE, route_id: 'TOUR_001' },
   ]);
+  const [expandedConditions, setExpandedConditions] = useState<Set<number>>(new Set());
 
   // ── Fleet level tab state ────────────────────────────────────────────────
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([{
@@ -170,6 +188,28 @@ export default function Step3Mobility() {
 
   const removeRoute = (idx: number) => setManualRoutes(manualRoutes.filter((_, i) => i !== idx));
 
+  // ── Driving conditions helpers (Reichweiten mode) ────────────────────────
+  const toggleConditions = (idx: number) =>
+    setExpandedConditions(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+
+  const updateRouteCond = (idx: number, field: keyof ManualRoute, value: number | boolean) => {
+    const updated = [...manualRoutes];
+    (updated[idx] as unknown as Record<string, unknown>)[field] = value;
+    setManualRoutes(updated);
+  };
+
+  const updateRouteCondMix = (idx: number, city: number, rural: number, hwy: number) => {
+    const updated = [...manualRoutes];
+    updated[idx].sim_city_share = city;
+    updated[idx].sim_rural_share = rural;
+    updated[idx].sim_hwy_share = hwy;
+    setManualRoutes(updated);
+  };
+
   const handleManualSubmit = async () => {
     const projectId = wizard.projectId;
     // vehicleIds[i] = the DB id of fleet_vehicle for vehicleTypes[i]
@@ -219,11 +259,16 @@ export default function Step3Mobility() {
             start_time: r.departure_time,
             end_time: r.arrival_time,
             source_type: 'manual' as const,
+            sim_temperature_c: r.sim_temperature_c,
+            sim_hvac_on: r.sim_hvac_on,
+            sim_city_share: r.sim_city_share,
+            sim_rural_share: r.sim_rural_share,
+            sim_hwy_share: r.sim_hwy_share,
           };
         }),
       }).catch(console.warn);
     }
-    setWizardStep(3);
+    onFinish ? onFinish() : setWizardStep(3);
   };
 
   // ── Fleet level handlers ─────────────────────────────────────────────────
@@ -307,7 +352,7 @@ export default function Step3Mobility() {
         })),
       }).catch(console.warn);
     }
-    setWizardStep(3);
+    onFinish ? onFinish() : setWizardStep(3);
   };
 
   // ── CSV handlers ─────────────────────────────────────────────────────────
@@ -332,7 +377,7 @@ export default function Step3Mobility() {
 
   const handleUploadNext = () => {
     if (uploadState !== 'done' || !uploadResult || uploadResult.imported === 0) return;
-    setWizardStep(3);
+    onFinish ? onFinish() : setWizardStep(3);
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -464,6 +509,16 @@ export default function Step3Mobility() {
             {/* Tours section */}
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-slate-700">Touren</h4>
+              {isReichweitenMode && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-700">
+                  <span className="shrink-0 mt-0.5">ℹ️</span>
+                  <span>
+                    <strong>Distanz (km)</strong> = Strecke pro einzelner Fahrt.
+                    Für die Machbarkeitsanalyse wird genau diese Strecke simuliert — <em>nicht</em> die Jahresleistung.
+                    Trips/Jahr werden nur für die Jahres-Energiebilanz verwendet.
+                  </span>
+                </div>
+              )}
               {manualRoutes.map((route, ri) => (
                 <div key={ri} className="border rounded-lg p-3 bg-white">
                   <div className="flex items-center justify-between mb-2">
@@ -536,6 +591,122 @@ export default function Step3Mobility() {
                       Ladefenster: {formatHours(computeChargingWindowMin(route.departure_time, route.arrival_time))}
                     </p>
                   )}
+
+                  {/* Fahrbedingungen — only shown in Reichweiten mode */}
+                  {isReichweitenMode && (
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleConditions(ri)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <Thermometer className="h-3.5 w-3.5" />
+                        Fahrbedingungen
+                        {expandedConditions.has(ri)
+                          ? <ChevronUp className="h-3 w-3" />
+                          : <ChevronDown className="h-3 w-3" />}
+                        <span className="ml-1 text-slate-400 font-normal">
+                          {route.sim_temperature_c > 0 ? '+' : ''}{route.sim_temperature_c}°C ·
+                          {route.sim_hvac_on ? ' HVAC Ein' : ' HVAC Aus'} ·
+                          🏙️{Math.round(route.sim_city_share * 100)}%
+                          🌲{Math.round(route.sim_rural_share * 100)}%
+                          🛣️{Math.round(route.sim_hwy_share * 100)}%
+                        </span>
+                      </button>
+
+                      {expandedConditions.has(ri) && (
+                        <div className="mt-3 space-y-3 bg-blue-50/50 rounded-lg p-3 border border-blue-100">
+                          {/* Temperature */}
+                          <div className="flex items-center gap-3">
+                            <Label className="text-xs text-slate-600 flex items-center gap-1 w-28 shrink-0">
+                              <Thermometer className="h-3 w-3" /> Temperatur
+                            </Label>
+                            <input
+                              type="range" min={-20} max={40} step={1}
+                              value={route.sim_temperature_c}
+                              onChange={e => updateRouteCond(ri, 'sim_temperature_c', Number(e.target.value))}
+                              className="flex-1 accent-blue-600"
+                            />
+                            <span className={cn(
+                              'text-xs font-bold tabular-nums w-14 text-right',
+                              route.sim_temperature_c < 0 ? 'text-blue-600' :
+                              route.sim_temperature_c > 28 ? 'text-orange-600' : 'text-slate-700'
+                            )}>
+                              {route.sim_temperature_c > 0 ? '+' : ''}{route.sim_temperature_c}°C
+                            </span>
+                          </div>
+
+                          {/* HVAC */}
+                          <div className="flex items-center gap-3">
+                            <Label className="text-xs text-slate-600 flex items-center gap-1 w-28 shrink-0">
+                              <Wind className="h-3 w-3" /> HVAC
+                            </Label>
+                            <div className="flex gap-2">
+                              {([false, true] as const).map(val => (
+                                <button
+                                  key={String(val)}
+                                  type="button"
+                                  onClick={() => updateRouteCond(ri, 'sim_hvac_on', val)}
+                                  className={cn(
+                                    'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                                    route.sim_hvac_on === val
+                                      ? 'bg-blue-600 text-white border-blue-600'
+                                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                                  )}
+                                >
+                                  {val ? '🌡️ Ein' : '⬜ Aus'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Usage mix */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-slate-600">Nutzungsmix</Label>
+                            {[
+                              { key: 'sim_city_share' as const, label: '🏙️ Stadt', color: 'accent-blue-500' },
+                              { key: 'sim_rural_share' as const, label: '🌲 Landstraße', color: 'accent-green-500' },
+                              { key: 'sim_hwy_share' as const, label: '🛣️ Autobahn', color: 'accent-orange-500' },
+                            ].map(({ key, label, color }) => {
+                              const pct = Math.round((route[key] as number) * 100);
+                              return (
+                                <div key={key} className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-500 w-24 shrink-0">{label}</span>
+                                  <input
+                                    type="range" min={0} max={100} step={5}
+                                    value={pct}
+                                    onChange={e => {
+                                      const v = Number(e.target.value) / 100;
+                                      const others = [
+                                        { k: 'sim_city_share' as const, val: route.sim_city_share },
+                                        { k: 'sim_rural_share' as const, val: route.sim_rural_share },
+                                        { k: 'sim_hwy_share' as const, val: route.sim_hwy_share },
+                                      ].filter(o => o.k !== key);
+                                      const otherSum = others[0].val + others[1].val;
+                                      const remaining = 1 - v;
+                                      const r0 = otherSum > 0 ? Math.round(remaining * (others[0].val / otherSum) * 100) / 100 : remaining / 2;
+                                      const r1 = Math.round((remaining - r0) * 100) / 100;
+                                      const vals: Record<string, number> = { [key]: v, [others[0].k]: r0, [others[1].k]: r1 };
+                                      updateRouteCondMix(ri, vals['sim_city_share'], vals['sim_rural_share'], vals['sim_hwy_share']);
+                                    }}
+                                    className={cn('flex-1', color)}
+                                  />
+                                  <span className="text-xs font-semibold text-slate-700 w-8 text-right tabular-nums">{pct}%</span>
+                                </div>
+                              );
+                            })}
+                            {/* validation */}
+                            {(() => {
+                              const sum = Math.round((route.sim_city_share + route.sim_rural_share + route.sim_hwy_share) * 100);
+                              return sum !== 100 ? (
+                                <p className="text-xs text-red-500">Summe: {sum}% (muss 100% sein)</p>
+                              ) : null;
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={addRoute} className="flex items-center gap-2">
@@ -550,6 +721,9 @@ export default function Step3Mobility() {
               <AlertDescription>
                 Definieren Sie pro Fahrzeugtyp Verbrauch, Laufleistung und Fahrtzeiten.
                 Repräsentative Touren werden automatisch berechnet.
+                {isReichweitenMode && (
+                  <><br /><strong>Reichweiten-Analyse:</strong> Tour-Distanz = km/Jahr ÷ Trips/Jahr (pro Fahrt).</>
+                )}
               </AlertDescription>
             </Alert>
             <div className="space-y-3">
@@ -630,11 +804,16 @@ export default function Step3Mobility() {
                       <Input className="h-8 text-xs" type="number" value={entry.stops}
                         onChange={e => updateFleetEntry(i, 'stops', parseInt(e.target.value))} />
                     </div>
-                    <div className="flex items-end pb-1">
+                    <div className="flex items-end pb-1 flex-col gap-1">
                       {entry.departure_time && entry.arrival_time && (
                         <p className="text-xs text-slate-400 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           Ladefenster: {formatHours(computeChargingWindowMin(entry.departure_time, entry.arrival_time))}
+                        </p>
+                      )}
+                      {isReichweitenMode && entry.trips_per_year > 0 && (
+                        <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
+                          🚗 Tour-Distanz: {Math.round(entry.annual_km / entry.trips_per_year)} km/Fahrt
                         </p>
                       )}
                     </div>
@@ -659,11 +838,17 @@ export default function Step3Mobility() {
             handleFleetLevelNext
           }
           disabled={
-            addRoutes.isPending || createFleet.isPending ||
+            addRoutes.isPending || createFleet.isPending || isFinishing ||
             (tab === 'upload' && (uploadState !== 'done' || !uploadResult || uploadResult.imported === 0))
           }
         >
-          {(addRoutes.isPending || createFleet.isPending) ? 'Wird gespeichert...' : 'Weiter zu Annahmen →'}
+          {isFinishing
+            ? 'Simulation läuft...'
+            : (addRoutes.isPending || createFleet.isPending)
+            ? 'Wird gespeichert...'
+            : onFinish
+            ? 'Simulation starten →'
+            : 'Weiter zu Annahmen →'}
         </Button>
       </div>
     </div>

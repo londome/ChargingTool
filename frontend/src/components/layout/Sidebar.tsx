@@ -1,8 +1,8 @@
 import { NavLink, useParams, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, Truck, Route, BarChart3,
-  Zap, Settings, ChevronLeft, ChevronRight, Upload,
-  Building2, FlaskConical,
+  Zap, Settings, ChevronLeft, ChevronRight,
+  Building2, FlaskConical, Gauge, Battery, BatteryCharging,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/store/projectStore';
@@ -21,19 +21,27 @@ const staticNavItems: NavItem[] = [
 
 function ProjectNavItems({ projectId }: { projectId: string }) {
   const location = useLocation();
+  const { activeProject } = useProjectStore();
   const isResultsActive =
     location.pathname.includes(`/projekte/${projectId}/ergebnisse`);
+  const isReichweitenModule = activeProject?.wizard_module === 'reichweiten';
+  const isOptimierungModule = activeProject?.wizard_module === 'ladeprozess_optimierung';
+  const isBidirektionalModule = activeProject?.wizard_module === 'ladeprozess_bidirektional';
 
   const topItems = [
     { label: 'Projekt-Wizard', href: `/projekte/${projectId}/wizard`, icon: FolderOpen },
-    { label: 'Tour-Upload', href: `/projekte/${projectId}/upload`, icon: Upload },
+  ];
+
+  const settingsItems = [
     { label: 'Szenarien', href: `/projekte/${projectId}/szenarien`, icon: FlaskConical },
   ];
 
   const resultItems = [
     { label: 'Flottenergebnisse', href: `/projekte/${projectId}/ergebnisse`, icon: BarChart3, exact: true },
     { label: 'Tourenanalyse', href: `/projekte/${projectId}/ergebnisse/touren`, icon: Route },
-    { label: 'Infrastruktur', href: `/projekte/${projectId}/ergebnisse/infrastruktur`, icon: Building2 },
+    ...(!isReichweitenModule
+      ? [{ label: 'Infrastruktur', href: `/projekte/${projectId}/ergebnisse/infrastruktur`, icon: Building2 }]
+      : []),
   ];
 
   return (
@@ -57,7 +65,95 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
         </NavLink>
       ))}
 
+      {/* Einstellungen section */}
+      <div className="mt-4">
+        <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <Settings className="h-3 w-3" /> Einstellungen
+        </p>
+        {settingsItems.map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-blue-50 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )
+            }
+          >
+            <item.icon className="h-4 w-4 shrink-0" />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+
       {/* Ergebnisse section */}
+      {isReichweitenModule ? (
+        /* Reichweiten module: show only dedicated results page */
+        <div className="mt-4">
+          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart3 className="h-3 w-3" /> Ergebnisse
+          </p>
+          <NavLink
+            to={`/projekte/${projectId}/ergebnisse/reichweiten`}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-blue-50 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )
+            }
+          >
+            <Gauge className="h-4 w-4 shrink-0" />
+            <span>Reichweiten Analyse</span>
+          </NavLink>
+        </div>
+      ) : isOptimierungModule ? (
+        /* Ladeprozess Optimierung module: show dedicated results page */
+        <div className="mt-4">
+          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart3 className="h-3 w-3" /> Ergebnisse
+          </p>
+          <NavLink
+            to={`/projekte/${projectId}/ergebnisse/optimierung`}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-green-50 text-green-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )
+            }
+          >
+            <Zap className="h-4 w-4 shrink-0" />
+            <span>Ladeoptimierung</span>
+          </NavLink>
+        </div>
+      ) : isBidirektionalModule ? (
+        /* Bidirektional module: show only Energiearbitrage */
+        <div className="mt-4">
+          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart3 className="h-3 w-3" /> Ergebnisse
+          </p>
+          <NavLink
+            to={`/projekte/${projectId}/ergebnisse/arbitrage`}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-purple-50 text-purple-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )
+            }
+          >
+            <BatteryCharging className="h-4 w-4 shrink-0" />
+            <span>Energiearbitrage</span>
+          </NavLink>
+        </div>
+      ) : (
       <div className={cn(
         'mt-1 rounded-md',
         isResultsActive ? 'bg-slate-50' : ''
@@ -85,6 +181,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
           </NavLink>
         ))}
       </div>
+      )}
     </div>
   );
 }

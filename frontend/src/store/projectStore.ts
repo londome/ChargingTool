@@ -45,8 +45,19 @@ export interface WizardVehicleRow {
   lease_monthly: number | null;
 }
 
+export type WizardModule = 'reichweiten' | 'ladeprozess' | 'ladeprozess_optimierung' | 'ladeprozess_bidirektional' | null;
+
+export interface ReichweitenSimParams {
+  temperature_c: number;
+  hvac_on: boolean;
+  city_share: number;
+  rural_share: number;
+  hwy_share: number;
+}
+
 export interface WizardState {
   currentStep: number;
+  wizardModule: WizardModule;
   step1: WizardStep1Data;
   step2Vehicles: WizardVehicleRow[];
   step3MobilityMode: 'upload' | 'manual' | 'fleet_level';
@@ -64,6 +75,7 @@ export interface WizardState {
   };
   step5SelectedEVIds: string[];
   step6Scenarios: Partial<Scenario>[];
+  reichweitenSimParams: ReichweitenSimParams;
   projectId: string | null;
   fleetId: string | null;
 }
@@ -88,12 +100,14 @@ interface ProjectStore {
   // Wizard state
   wizard: WizardState;
   setWizardStep: (step: number) => void;
+  setWizardModule: (module: WizardModule) => void;
   updateWizardStep1: (data: Partial<WizardStep1Data>) => void;
   updateWizardStep2: (vehicles: WizardVehicleRow[]) => void;
   setWizardMobilityMode: (mode: 'upload' | 'manual' | 'fleet_level') => void;
   updateWizardStep3Depot: (data: Partial<WizardStep3DepotData>) => void;
   updateWizardStep4: (data: Partial<WizardState['step4']>) => void;
   setWizardSelectedEVs: (ids: string[]) => void;
+  updateReichweitenSimParams: (params: Partial<ReichweitenSimParams>) => void;
   updateWizardStep6: (scenarios: Partial<Scenario>[]) => void;
   setWizardProjectId: (id: string) => void;
   setWizardFleetId: (id: string) => void;
@@ -131,6 +145,7 @@ const defaultWizardStep4 = {
 
 const initialWizardState: WizardState = {
   currentStep: 1,
+  wizardModule: null,
   step1: {
     name: '',
     country: 'DE',
@@ -146,6 +161,13 @@ const initialWizardState: WizardState = {
   step4: defaultWizardStep4,
   step5SelectedEVIds: [],
   step6Scenarios: [],
+  reichweitenSimParams: {
+    temperature_c: 15,
+    hvac_on: false,
+    city_share: 0.5,
+    rural_share: 0.3,
+    hwy_share: 0.2,
+  },
   projectId: null,
   fleetId: null,
 };
@@ -169,6 +191,9 @@ export const useProjectStore = create<ProjectStore>()(
       setWizardStep: (step) => set((state) => ({
         wizard: { ...state.wizard, currentStep: step },
       })),
+      setWizardModule: (module) => set((state) => ({
+        wizard: { ...state.wizard, wizardModule: module },
+      })),
       updateWizardStep1: (data) => set((state) => ({
         wizard: { ...state.wizard, step1: { ...state.wizard.step1, ...data } },
       })),
@@ -186,6 +211,9 @@ export const useProjectStore = create<ProjectStore>()(
       })),
       setWizardSelectedEVs: (ids) => set((state) => ({
         wizard: { ...state.wizard, step5SelectedEVIds: ids },
+      })),
+      updateReichweitenSimParams: (params) => set((state) => ({
+        wizard: { ...state.wizard, reichweitenSimParams: { ...state.wizard.reichweitenSimParams, ...params } },
       })),
       updateWizardStep6: (scenarios) => set((state) => ({
         wizard: { ...state.wizard, step6Scenarios: scenarios },
