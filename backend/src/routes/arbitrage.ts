@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '../database/db';
-import { fetchDayAheadPrices } from '../services/entsoePrices';
+import { fetchDayAheadPrices, fetchDayAheadPricesPeriod } from '../services/entsoePrices';
 import { solveArbitrage, ArbitrageInput } from '../optimization/milpArbitrage';
 
 const router = Router();
@@ -19,6 +19,7 @@ router.post('/run', async (req: Request, res: Response) => {
     const {
       project_id,
       date,
+      date_to,            // optional — if present and > date, run multi-day period
       bidding_zone = 'DE_LU',
       gcp_max_kw = 100,
       wallbox_power_kw = 22,
@@ -50,10 +51,7 @@ router.post('/run', async (req: Request, res: Response) => {
       try {
         await query(`UPDATE arbitrage_runs SET status = 'running' WHERE id = $1`, [runId]);
 
-        // 1. Fetch ENTSO-E day-ahead prices
-        const pricesResult = await fetchDayAheadPrices(runDate, bidding_zone);
-
-        // 2. Load fleet vehicles from DB
+        // 1. Load fleet vehicles from DB
         const fleetsResult = await query<{
           id: string; segment: string; count: number; annual_km: number;
         }>(
@@ -143,9 +141,11 @@ router.post('/run', async (req: Request, res: Response) => {
             : departureInterval;
         const clampedDeparture = Math.min(effectiveDepartureInterval, 96);
 
-        // 7. Build MILP input (V2G: fleet batteries are the storage)
-        const arbitrageInput: ArbitrageInput = {
-          prices_15min: pricesResult.prices_15min,
+        // 7. Determine if multi-day
+        const dateTo = date_to ? new Date(date_to) : null;
+        const isMultiDay = dateTo !== null && dateTo > runDate;
+
+        const baseArbitrageInput = {
           battery_kwh: batteryKwh,
           max_power_kw: maxPowerKw,
           eta_c: 0.92,
@@ -157,24 +157,90 @@ router.post('/run', async (req: Request, res: Response) => {
           arrival_interval: Math.max(0, Math.min(arrivalInterval, 95)),
           departure_interval: Math.max(1, Math.min(clampedDeparture, 96)),
           soc_final_pct: soc_target_pct,
-          date: runDateStr,
         };
 
-        // 8. Solve MILP
-        const arbResult = await solveArbitrage(arbitrageInput);
+        if (isMultiDay && dateTo) {
+          // Multi-day: fetch period prices once, loop per day
+          const periodResult = await fetchDayAheadPricesPeriod(runDate, dateTo, bidding_zone);
 
-        // 9. Store results
-        await query(
-          `UPDATE arbitrage_runs
-           SET status = $1, results = $2, prices = $3, completed_at = NOW()
-           WHERE id = $4`,
-          [
-            arbResult.status === 'optimal' ? 'completed' : arbResult.status,
-            JSON.stringify(arbResult),
-            JSON.stringify({ prices_15min: pricesResult.prices_15min, source: pricesResult.source }),
-            runId,
-          ]
-        );
+          let totalNetProfit = 0;
+          let totalRevenue = 0;
+          let totalCost = 0;
+          let totalCycles = 0;
+          const dayResults: object[] = [];
+
+          for (const dayPrices of periodResult.days) {
+            const arbInput: ArbitrageInput = {
+              ...baseArbitrageInput,
+              prices_15min: dayPrices.prices_15min,
+              date: dayPrices.date,
+            };
+            const arbResult = await solveArbitrage(arbInput);
+            totalNetProfit += arbResult.net_profit_eur ?? 0;
+            totalRevenue += arbResult.total_revenue_eur ?? 0;
+            totalCost += arbResult.total_cost_eur ?? 0;
+            totalCycles += arbResult.cycles ?? 0;
+            dayResults.push({
+              date: dayPrices.date,
+              net_profit_eur: arbResult.net_profit_eur,
+              total_revenue_eur: arbResult.total_revenue_eur,
+              total_cost_eur: arbResult.total_cost_eur,
+              cycles: arbResult.cycles,
+              schedule_charge_kw: arbResult.schedule_charge_kw,
+              schedule_discharge_kw: arbResult.schedule_discharge_kw,
+              net_grid_kw: arbResult.net_grid_kw,
+              soc_curve_pct: arbResult.soc_curve_pct,
+              prices_15min: dayPrices.prices_15min,
+              status: arbResult.status,
+            });
+          }
+
+          const periodResults = {
+            type: 'period',
+            days: dayResults,
+            totals: {
+              net_profit_eur: totalNetProfit,
+              total_revenue_eur: totalRevenue,
+              total_cost_eur: totalCost,
+              total_cycles: totalCycles,
+              days_count: periodResult.total_days,
+            },
+          };
+
+          await query(
+            `UPDATE arbitrage_runs
+             SET status = 'completed', results = $1, prices = $2, completed_at = NOW()
+             WHERE id = $3`,
+            [
+              JSON.stringify(periodResults),
+              JSON.stringify({ source: periodResult.source }),
+              runId,
+            ]
+          );
+        } else {
+          // Single-day: existing path
+          const pricesResult = await fetchDayAheadPrices(runDate, bidding_zone);
+
+          const arbitrageInput: ArbitrageInput = {
+            ...baseArbitrageInput,
+            prices_15min: pricesResult.prices_15min,
+            date: runDateStr,
+          };
+
+          const arbResult = await solveArbitrage(arbitrageInput);
+
+          await query(
+            `UPDATE arbitrage_runs
+             SET status = $1, results = $2, prices = $3, completed_at = NOW()
+             WHERE id = $4`,
+            [
+              arbResult.status === 'optimal' ? 'completed' : arbResult.status,
+              JSON.stringify(arbResult),
+              JSON.stringify({ prices_15min: pricesResult.prices_15min, source: pricesResult.source }),
+              runId,
+            ]
+          );
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         console.error('Arbitrage run failed:', msg);

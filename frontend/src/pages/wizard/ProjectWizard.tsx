@@ -44,9 +44,11 @@ const STEPS_REICHWEITEN = [
 
 const STEPS_BIDIREKTIONAL = [
   { number: 1, label: 'Projektkontext' },
-  { number: 2, label: 'Depot & Netzanschluss' },
-  { number: 3, label: 'Batteriespeicher' },
-  { number: 4, label: 'Arbitrage-Strategie' },
+  { number: 2, label: 'Mobilität & Touren' },
+  { number: 3, label: 'Depot & Netzanschluss' },
+  { number: 4, label: 'Ladeinfrastruktur' },
+  { number: 5, label: 'EV-Auswahl' },
+  { number: 6, label: 'Arbitrage-Strategie' },
 ];
 
 export default function ProjectWizard() {
@@ -188,7 +190,7 @@ export default function ProjectWizard() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         {currentStep === 1 && <Step1ProjectContext />}
 
-        {currentStep === 2 && wizard.wizardModule !== 'ladeprozess_bidirektional' && (
+        {currentStep === 2 && (
           <Step3Mobility
             onFinish={wizard.wizardModule === 'reichweiten' ? handleMobilityNextReichweitenModule : undefined}
             isFinishing={false}
@@ -217,9 +219,10 @@ export default function ProjectWizard() {
         {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 7 && <Step7ChargingStrategy />}
 
         {/* Ladeprozess Bidirektional module steps (4-step flow) */}
-        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 2 && <Step3Depot />}
-        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 3 && <Step4Ladeinfrastruktur />}
-        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 4 && <Step4ArbitrageStrategy />}
+        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 3 && <Step3Depot />}
+        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 4 && <Step4Ladeinfrastruktur />}
+        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 5 && <Step5EVSelection />}
+        {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 6 && <Step4ArbitrageStrategy />}
       </div>
     </div>
   );

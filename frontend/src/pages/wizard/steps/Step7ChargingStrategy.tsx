@@ -32,9 +32,17 @@ export default function Step7ChargingStrategy() {
   const socTargetDefault = wizard.step4.soc_target ?? 80;
   const socMinDefault = wizard.step4.soc_min ?? 20;
 
-  const [date, setDate] = useState<string>(todayISO());
+  const [dateFrom, setDateFrom] = useState<string>(todayISO());
+  const [dateTo, setDateTo] = useState<string>(todayISO());
   const [biddingZone, setBiddingZone] = useState<string>('DE_LU');
   const [error, setError] = useState<string | null>(null);
+
+  const dayCount = (() => {
+    const d1 = new Date(dateFrom);
+    const d2 = new Date(dateTo);
+    const diff = Math.round((d2.getTime() - d1.getTime()) / 86400000);
+    return Math.max(1, diff + 1);
+  })();
 
   const projectId = wizard.projectId;
 
@@ -45,9 +53,11 @@ export default function Step7ChargingStrategy() {
     }
     setError(null);
     try {
+      const multiDay = dateTo > dateFrom;
       await runOptimization.mutateAsync({
         project_id: projectId,
-        date,
+        date: dateFrom,
+        ...(multiDay ? { date_to: dateTo } : {}),
         bidding_zone: biddingZone,
         gcp_max_kw: gcpDefault,
         wallbox_power_kw: wallboxDefault,
@@ -92,20 +102,43 @@ export default function Step7ChargingStrategy() {
         </div>
       </div>
 
-      {/* Date */}
+      {/* Date range */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Calendar className="w-4 h-4 text-slate-400" />
-          Optimierungsdatum
+          Analysezeitraum
         </Label>
-        <Input
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          className="w-48"
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="space-y-1">
+            <p className="text-xs text-slate-500">Von (Startdatum)</p>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={e => {
+                setDateFrom(e.target.value);
+                if (e.target.value > dateTo) setDateTo(e.target.value);
+              }}
+              className="w-44"
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-slate-500">Bis (Enddatum)</p>
+            <Input
+              type="date"
+              value={dateTo}
+              min={dateFrom}
+              onChange={e => setDateTo(e.target.value)}
+              className="w-44"
+            />
+          </div>
+          <div className="pt-4">
+            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">
+              {dayCount} {dayCount === 1 ? 'Tag' : 'Tage'}
+            </span>
+          </div>
+        </div>
         <p className="text-xs text-slate-500">
-          Day-Ahead Preise werden für dieses Datum von der ENTSO-E Transparenzplattform abgerufen.
+          Day-Ahead Preise werden für diesen Zeitraum von der ENTSO-E Transparenzplattform abgerufen.
         </p>
       </div>
 
@@ -167,7 +200,7 @@ export default function Step7ChargingStrategy() {
       <div className="flex justify-end pt-2">
         <Button
           onClick={handleStart}
-          disabled={runOptimization.isPending || !date}
+          disabled={runOptimization.isPending || !dateFrom}
           className="bg-green-600 hover:bg-green-700 text-white px-6"
         >
           {runOptimization.isPending ? (

@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ComposedChart, AreaChart, LineChart,
+  ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
@@ -59,11 +59,16 @@ export default function ArbitrageResults() {
   const latestQuery = useArbitrageLatest(pid);
 
   const latestData = latestQuery.data;
-  const results: ArbitrageRunResult | null = latestData?.results ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawResults: any = latestData?.results ?? null;
+  const isPeriod = rawResults?.type === 'period';
+  const results: ArbitrageRunResult | null = isPeriod ? null : (rawResults as ArbitrageRunResult | null);
+  const periodTotals = isPeriod ? rawResults?.totals : null;
+  const periodDays: { date: string; net_profit_eur: number; total_revenue_eur: number; total_cost_eur: number }[] = isPeriod ? (rawResults?.days ?? []) : [];
   const isLoading = latestData?.status === 'pending' || latestData?.status === 'running';
   const isError = latestData?.status === 'failed';
   const isInfeasible = results?.status === 'infeasible';
-  const isOptimal = results?.status === 'optimal';
+  const isOptimal = results?.status === 'optimal' || isPeriod;
 
   // Chart 1: Price (bar) + Net grid power (line)
   const priceNetData = TIME_LABELS.map((time, i) => ({
@@ -180,39 +185,60 @@ export default function ArbitrageResults() {
       )}
 
       {/* Results */}
-      {!isLoading && !isError && isOptimal && results && (
+      {!isLoading && !isError && isOptimal && (results || isPeriod) && (
         <>
           {/* KPI cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
               label="Netto-Gewinn"
-              value={`${results.net_profit_eur.toFixed(2)} €`}
-              sub={`am ${latestData?.run_date ?? ''}`}
+              value={`${isPeriod ? periodTotals?.net_profit_eur?.toFixed(2) : results!.net_profit_eur.toFixed(2)} €`}
+              sub={isPeriod ? `${periodTotals?.days_count} Tage gesamt` : `am ${latestData?.run_date ?? ''}`}
               icon={DollarSign}
               color="green"
             />
             <KpiCard
               label="Erlöse (V2G Einspeisung)"
-              value={`${results.total_revenue_eur.toFixed(2)} €`}
+              value={`${isPeriod ? periodTotals?.total_revenue_eur?.toFixed(2) : results!.total_revenue_eur.toFixed(2)} €`}
               sub="Einspeisung ins Netz"
               icon={TrendingUp}
               color="blue"
             />
             <KpiCard
               label="Kosten (Ladung)"
-              value={`${results.total_cost_eur.toFixed(2)} €`}
+              value={`${isPeriod ? periodTotals?.total_cost_eur?.toFixed(2) : results!.total_cost_eur.toFixed(2)} €`}
               sub="Bezug aus dem Netz"
               icon={TrendingDown}
               color="amber"
             />
             <KpiCard
-              label="Zyklen"
-              value={results.cycles.toFixed(2)}
-              sub={`${results.computation_time_ms} ms Berechnungszeit`}
+              label={isPeriod ? 'Zyklen gesamt' : 'Zyklen'}
+              value={isPeriod ? periodTotals?.total_cycles?.toFixed(2) : results!.cycles.toFixed(2)}
+              sub={isPeriod ? 'Über den gesamten Zeitraum' : `${results!.computation_time_ms} ms Berechnungszeit`}
               icon={RefreshCw}
               color="purple"
             />
           </div>
+
+          {/* Multi-day: daily net profit bar chart */}
+          {isPeriod && periodDays.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Netto-Gewinn</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={periodDays} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" €" />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(2)} €`, 'Netto-Gewinn']} />
+                  <Bar dataKey="net_profit_eur" name="Netto-Gewinn" radius={[4, 4, 0, 0]}
+                    fill="#16a34a"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Single-day charts */}
+          {!isPeriod && results && (<>
 
           {/* Chart 1: Price + Net grid power */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -384,6 +410,7 @@ export default function ArbitrageResults() {
               </table>
             </div>
           </div>
+          </>)}
         </>
       )}
 

@@ -483,6 +483,7 @@ export async function previewFile(file: File): Promise<{
 export interface OptimizationRunInput {
   project_id: string;
   date: string;                    // ISO date YYYY-MM-DD
+  date_to?: string;                // optional — if set and > date, runs multi-day period
   bidding_zone: string;            // 'DE_LU', 'GB', 'NL', etc.
   gcp_max_kw: number;
   wallbox_power_kw: number;
@@ -557,6 +558,7 @@ export function useOptimizationLatest(projectId: string | undefined) {
 export interface ArbitrageRunInput {
   project_id: string;
   date: string;
+  date_to?: string;                // optional — if set and > date, runs multi-day period
   bidding_zone: string;
   gcp_max_kw: number;
   wallbox_power_kw: number;

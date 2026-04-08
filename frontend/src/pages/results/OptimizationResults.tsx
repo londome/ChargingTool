@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  ComposedChart, AreaChart, LineChart,
+  ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
@@ -116,11 +116,16 @@ export default function OptimizationResults() {
   };
 
   const latestData = latestQuery.data;
-  const results: OptimizationRunResult | null = latestData?.results ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawResults: any = latestData?.results ?? null;
+  const isPeriod = rawResults?.type === 'period';
+  const results: OptimizationRunResult | null = isPeriod ? null : (rawResults as OptimizationRunResult | null);
+  const periodTotals = isPeriod ? rawResults?.totals : null;
+  const periodDays: { date: string; total_cost_eur: number; total_energy_kwh: number }[] = isPeriod ? (rawResults?.days ?? []) : [];
   const isLoading = isRunning || latestData?.status === 'pending' || latestData?.status === 'running';
   const isError = latestData?.status === 'failed';
   const isInfeasible = results?.status === 'infeasible';
-  const isOptimal = results?.status === 'optimal';
+  const isOptimal = results?.status === 'optimal' || isPeriod;
 
   // Build chart data for price + fleet power
   const priceFleetData = TIME_LABELS.map((time, i) => ({
@@ -318,41 +323,62 @@ export default function OptimizationResults() {
       )}
 
       {/* Results */}
-      {!isLoading && !isError && isOptimal && results && (
+      {!isLoading && !isError && isOptimal && (results || isPeriod) && (
         <>
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
               label="Gesamtkosten"
-              value={`${results.total_cost_eur.toFixed(2)} €`}
-              sub={`für ${latestData?.optimization_date ?? date}`}
+              value={`${isPeriod ? periodTotals?.total_cost_eur?.toFixed(2) : results!.total_cost_eur.toFixed(2)} €`}
+              sub={isPeriod ? `${periodTotals?.days_count} Tage` : `für ${latestData?.optimization_date ?? date}`}
               icon={DollarSign}
               color="green"
             />
             <KpiCard
               label="Gesamtenergie"
-              value={`${results.total_energy_kwh.toFixed(1)} kWh`}
-              sub={`${results.vehicles.length} Fahrzeuge`}
+              value={`${isPeriod ? periodTotals?.total_energy_kwh?.toFixed(1) : results!.total_energy_kwh.toFixed(1)} kWh`}
+              sub={isPeriod ? 'Gesamter Zeitraum' : `${results!.vehicles.length} Fahrzeuge`}
               icon={Zap}
               color="blue"
             />
             <KpiCard
               label="Ø Preis"
-              value={`${results.total_energy_kwh > 0 ? ((results.total_cost_eur / results.total_energy_kwh) * 100).toFixed(1) : '0'} ct/kWh`}
+              value={(() => {
+                const cost = isPeriod ? periodTotals?.total_cost_eur : results!.total_cost_eur;
+                const energy = isPeriod ? periodTotals?.total_energy_kwh : results!.total_energy_kwh;
+                return `${energy > 0 ? ((cost / energy) * 100).toFixed(1) : '0'} ct/kWh`;
+              })()}
               sub="Durchschnittlicher Ladepreis"
               icon={TrendingDown}
               color="amber"
             />
             <KpiCard
-              label="Berechnungszeit"
-              value={`${results.computation_time_ms} ms`}
-              sub="LP-Solver Laufzeit"
+              label={isPeriod ? 'Tage analysiert' : 'Berechnungszeit'}
+              value={isPeriod ? `${periodTotals?.days_count}` : `${results!.computation_time_ms} ms`}
+              sub={isPeriod ? 'Mehrtägiger Zeitraum' : 'LP-Solver Laufzeit'}
               icon={Clock}
               color="purple"
             />
           </div>
 
-          {/* Price + Fleet Power chart */}
+          {/* Multi-day: daily cost bar chart */}
+          {isPeriod && periodDays.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Ladekosten</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={periodDays} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" €" />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(2)} €`, 'Ladekosten']} />
+                  <Bar dataKey="total_cost_eur" fill="#16a34a" name="Ladekosten" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Single-day charts */}
+          {!isPeriod && results && (<>
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">Strompreise & Flotten-Ladeplan</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -496,11 +522,12 @@ export default function OptimizationResults() {
               </table>
             </div>
           </div>
+          </>)}
         </>
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && !results && (
+      {!isLoading && !isError && !results && !isPeriod && (
         <div className="bg-white rounded-xl border border-slate-200 p-12 flex flex-col items-center gap-4 text-center">
           <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
             <Zap className="w-7 h-7 text-green-600" />

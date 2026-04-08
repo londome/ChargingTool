@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '../database/db';
-import { fetchDayAheadPrices } from '../services/entsoePrices';
+import { fetchDayAheadPrices, fetchDayAheadPricesPeriod } from '../services/entsoePrices';
 import { solveChargingOptimization, ChargingVehicle } from '../optimization/lpCharging';
 
 const router = Router();
@@ -19,6 +19,7 @@ router.post('/run', async (req: Request, res: Response) => {
     const {
       project_id,
       date,
+      date_to,            // optional — if present and > date, run multi-day period
       bidding_zone = 'DE_LU',
       gcp_max_kw = 100,
       wallbox_power_kw = 22,
@@ -50,10 +51,7 @@ router.post('/run', async (req: Request, res: Response) => {
       try {
         await query(`UPDATE optimization_runs SET status = 'running' WHERE id = $1`, [runId]);
 
-        // 1. Fetch ENTSO-E prices
-        const pricesResult = await fetchDayAheadPrices(optimizationDate, bidding_zone);
-
-        // 2. Load fleet vehicles from DB
+        // 1. Load fleet vehicles from DB
         // fleet_vehicles has no ev_model_id column — use simulation results if available,
         // otherwise use defaults from Step4 params passed in the request
         const fleetsResult = await query<{
@@ -169,26 +167,81 @@ router.post('/run', async (req: Request, res: Response) => {
           departure_interval: Math.max(1, Math.min(clampedDeparture, 96)),
         }));
 
-        // 3. Run LP optimization
-        const optResult = await solveChargingOptimization({
-          vehicles,
-          prices_15min: pricesResult.prices_15min,
-          gcp_max_kw,
-          date: optimizationDate.toISOString().split('T')[0],
-        });
+        // 3. Determine if multi-day
+        const dateTo = date_to ? new Date(date_to) : null;
+        const isMultiDay = dateTo !== null && dateTo > optimizationDate;
 
-        // 4. Store results
-        await query(
-          `UPDATE optimization_runs
-           SET status = $1, results = $2, prices = $3, completed_at = NOW()
-           WHERE id = $4`,
-          [
-            optResult.status === 'optimal' ? 'completed' : optResult.status,
-            JSON.stringify(optResult),
-            JSON.stringify({ prices_15min: pricesResult.prices_15min, source: pricesResult.source }),
-            runId,
-          ]
-        );
+        if (isMultiDay && dateTo) {
+          // Multi-day: fetch period prices once, loop per day
+          const periodResult = await fetchDayAheadPricesPeriod(optimizationDate, dateTo, bidding_zone);
+
+          let totalCostEur = 0;
+          let totalEnergyKwh = 0;
+          const dayResults: object[] = [];
+
+          for (const dayPrices of periodResult.days) {
+            const dayOptResult = await solveChargingOptimization({
+              vehicles,
+              prices_15min: dayPrices.prices_15min,
+              gcp_max_kw,
+              date: dayPrices.date,
+            });
+            totalCostEur += dayOptResult.total_cost_eur ?? 0;
+            totalEnergyKwh += dayOptResult.total_energy_kwh ?? 0;
+            dayResults.push({
+              date: dayPrices.date,
+              total_cost_eur: dayOptResult.total_cost_eur,
+              total_energy_kwh: dayOptResult.total_energy_kwh,
+              fleet_power_kw: dayOptResult.fleet_power_kw,
+              vehicles: dayOptResult.vehicles,
+              prices_15min: dayPrices.prices_15min,
+              status: dayOptResult.status,
+            });
+          }
+
+          const periodResults = {
+            type: 'period',
+            days: dayResults,
+            totals: {
+              total_cost_eur: totalCostEur,
+              total_energy_kwh: totalEnergyKwh,
+              days_count: periodResult.total_days,
+            },
+          };
+
+          await query(
+            `UPDATE optimization_runs
+             SET status = 'completed', results = $1, prices = $2, completed_at = NOW()
+             WHERE id = $3`,
+            [
+              JSON.stringify(periodResults),
+              JSON.stringify({ source: periodResult.source }),
+              runId,
+            ]
+          );
+        } else {
+          // Single-day: existing path
+          const pricesResult = await fetchDayAheadPrices(optimizationDate, bidding_zone);
+
+          const optResult = await solveChargingOptimization({
+            vehicles,
+            prices_15min: pricesResult.prices_15min,
+            gcp_max_kw,
+            date: optimizationDate.toISOString().split('T')[0],
+          });
+
+          await query(
+            `UPDATE optimization_runs
+             SET status = $1, results = $2, prices = $3, completed_at = NOW()
+             WHERE id = $4`,
+            [
+              optResult.status === 'optimal' ? 'completed' : optResult.status,
+              JSON.stringify(optResult),
+              JSON.stringify({ prices_15min: pricesResult.prices_15min, source: pricesResult.source }),
+              runId,
+            ]
+          );
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         console.error('Optimization run failed:', msg);

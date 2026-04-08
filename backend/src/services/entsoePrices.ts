@@ -53,6 +53,19 @@ export interface DayAheadPricesResult {
   source: 'entso-e' | 'mock';
 }
 
+export interface DayPrices {
+  date: string;            // 'YYYY-MM-DD'
+  prices_15min: number[];  // 96 values €/kWh
+  prices_hourly: number[]; // 24 values €/kWh
+  source: 'entso-e' | 'mock';
+}
+
+export interface PeriodPricesResult {
+  days: DayPrices[];
+  total_days: number;
+  source: 'entso-e' | 'mock';
+}
+
 export async function fetchDayAheadPrices(
   date: Date,
   biddingZone: string
@@ -93,6 +106,152 @@ export async function fetchDayAheadPrices(
     console.warn('ENTSO-E API unavailable, using mock prices:', (err as Error).message);
     return buildMockResult();
   }
+}
+
+function buildDayPricesFromMock(dateStr: string): DayPrices {
+  const prices96mwh = generateMockPrices();
+  const prices96kwh = prices96mwh.map(p => p / 1000);
+  const pricesHourly = Array.from({ length: 24 }, (_, h) => {
+    const slice = prices96kwh.slice(h * 4, h * 4 + 4);
+    return slice.reduce((a, b) => a + b, 0) / 4;
+  });
+  return { date: dateStr, prices_15min: prices96kwh, prices_hourly: pricesHourly, source: 'mock' };
+}
+
+export async function fetchDayAheadPricesPeriod(
+  dateFrom: Date,
+  dateTo: Date,
+  biddingZone: string
+): Promise<PeriodPricesResult> {
+  const eicCode = EIC_CODES[biddingZone];
+  if (!eicCode) {
+    throw new Error(`Unknown bidding zone: ${biddingZone}`);
+  }
+
+  const periodStart = formatDateParam(dateFrom);
+  const dayAfterTo = new Date(dateTo);
+  dayAfterTo.setUTCDate(dayAfterTo.getUTCDate() + 1);
+  const periodEnd = formatDateParam(dayAfterTo);
+
+  // Build list of expected dates (YYYY-MM-DD)
+  const expectedDates: string[] = [];
+  const cur = new Date(dateFrom);
+  while (cur <= dateTo) {
+    expectedDates.push(cur.toISOString().split('T')[0]);
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+
+  const url = new URL(ENTSO_E_BASE_URL);
+  url.searchParams.set('securityToken', ENTSO_E_API_KEY);
+  url.searchParams.set('documentType', 'A44');
+  url.searchParams.set('in_Domain', eicCode);
+  url.searchParams.set('out_Domain', eicCode);
+  url.searchParams.set('periodStart', periodStart);
+  url.searchParams.set('periodEnd', periodEnd);
+
+  let xmlDayMap: Map<string, DayPrices> | null = null;
+
+  try {
+    const response = await fetch(url.toString(), {
+      headers: { 'Accept': 'application/xml' },
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (response.ok) {
+      const xml = await response.text();
+      xmlDayMap = parseEntsoeXmlMultiDay(xml);
+    } else {
+      console.warn(`ENTSO-E API returned ${response.status} for period, falling back to mock`);
+    }
+  } catch (err) {
+    console.warn('ENTSO-E API unavailable for period, using mock prices:', (err as Error).message);
+  }
+
+  const days: DayPrices[] = expectedDates.map(dateStr => {
+    if (xmlDayMap?.has(dateStr)) {
+      return xmlDayMap.get(dateStr)!;
+    }
+    return buildDayPricesFromMock(dateStr);
+  });
+
+  const anyReal = days.some(d => d.source === 'entso-e');
+  return {
+    days,
+    total_days: days.length,
+    source: anyReal ? 'entso-e' : 'mock',
+  };
+}
+
+function parseEntsoeXmlMultiDay(xml: string): Map<string, DayPrices> {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    parseTagValue: true,
+    parseAttributeValue: true,
+  });
+  const doc = parser.parse(xml);
+  const publication = doc['Publication_MarketDocument'] || doc;
+  const timeSeriesRaw = publication['TimeSeries'];
+
+  const result = new Map<string, DayPrices>();
+  if (!timeSeriesRaw) return result;
+
+  const tsList = Array.isArray(timeSeriesRaw) ? timeSeriesRaw : [timeSeriesRaw];
+
+  for (const ts of tsList) {
+    const period = ts['Period'];
+    if (!period) continue;
+
+    // timeInterval.start looks like "2026-04-06T22:00Z"
+    const intervalStart: string = period['timeInterval']?.['start'] ?? '';
+    const resolution: string = period['resolution'] || 'PT60M';
+    const pointsRaw = period['Point'];
+    if (!pointsRaw) continue;
+
+    // Derive YYYY-MM-DD from the UTC start (use UTC date directly as key)
+    const startDate = new Date(intervalStart);
+    const dateStr = startDate.toISOString().split('T')[0];
+
+    const points = Array.isArray(pointsRaw) ? pointsRaw : [pointsRaw];
+    const rawPoints: { position: number; price: number }[] = [];
+
+    for (const pt of points) {
+      const position = Number(pt['position']);
+      const priceAmount = Number(pt['price.amount']);
+      if (!isNaN(position) && !isNaN(priceAmount)) {
+        rawPoints.push({ position, price: priceAmount });
+      }
+    }
+
+    // Expand hourly to 15-min if needed
+    let allPoints = rawPoints;
+    if (resolution === 'PT60M' && rawPoints.length > 0) {
+      allPoints = [];
+      for (const pt of rawPoints) {
+        for (let q = 0; q < 4; q++) {
+          allPoints.push({ position: (pt.position - 1) * 4 + q + 1, price: pt.price });
+        }
+      }
+    }
+
+    allPoints.sort((a, b) => a.position - b.position);
+
+    const prices96kwh = Array(96).fill(0);
+    for (const pt of allPoints) {
+      const idx = pt.position - 1;
+      if (idx >= 0 && idx < 96) {
+        prices96kwh[idx] = pt.price / 1000;
+      }
+    }
+
+    const pricesHourly = Array.from({ length: 24 }, (_, h) => {
+      const slice = prices96kwh.slice(h * 4, h * 4 + 4);
+      return slice.reduce((a, b) => a + b, 0) / 4;
+    });
+
+    result.set(dateStr, { date: dateStr, prices_15min: prices96kwh, prices_hourly: pricesHourly, source: 'entso-e' });
+  }
+
+  return result;
 }
 
 function buildMockResult(): DayAheadPricesResult {

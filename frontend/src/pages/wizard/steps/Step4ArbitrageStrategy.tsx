@@ -19,8 +19,16 @@ export default function Step4ArbitrageStrategy() {
   const runArbitrage = useRunArbitrage();
 
   const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(today);
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [biddingZone, setBiddingZone] = useState('DE_LU');
+
+  const dayCount = (() => {
+    const d1 = new Date(dateFrom);
+    const d2 = new Date(dateTo);
+    const diff = Math.round((d2.getTime() - d1.getTime()) / 86400000);
+    return Math.max(1, diff + 1);
+  })();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,9 +44,11 @@ export default function Step4ArbitrageStrategy() {
     setIsRunning(true);
     setError(null);
     try {
+      const multiDay = dateTo > dateFrom;
       await runArbitrage.mutateAsync({
         project_id: projectId,
-        date,
+        date: dateFrom,
+        ...(multiDay ? { date_to: dateTo } : {}),
         bidding_zone: biddingZone,
         gcp_max_kw: gcpMaxKw,
         wallbox_power_kw: wallboxPowerKw,
@@ -102,13 +112,33 @@ export default function Step4ArbitrageStrategy() {
 
       {/* Arbitrage-specific parameters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Date */}
+        {/* Date from */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Optimierungsdatum</label>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Von (Startdatum)</label>
           <input
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={dateFrom}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              if (e.target.value > dateTo) setDateTo(e.target.value);
+            }}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+
+        {/* Date to */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">
+            Bis (Enddatum)
+            <span className="ml-2 text-purple-600 font-semibold">
+              {dayCount} {dayCount === 1 ? 'Tag' : 'Tage'}
+            </span>
+          </label>
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom}
+            onChange={(e) => setDateTo(e.target.value)}
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
