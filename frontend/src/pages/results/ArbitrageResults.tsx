@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine,
+  Legend, ResponsiveContainer, ReferenceLine, Brush,
 } from 'recharts';
 import {
   Battery, TrendingUp, TrendingDown, DollarSign,
@@ -77,6 +77,17 @@ export default function ArbitrageResults() {
     net_grid_kw:  results?.net_grid_kw?.[i] ?? 0,
   }));
 
+  // For period mode: flatten price + net grid power for all days
+  const allPriceNetData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 96 }, (_, i) => ({
+          time: `${day.date} ${formatTime(i)}`,
+          price_eurkwh: day.prices_15min?.[i] ?? 0,
+          net_grid_kw:  day.net_grid_kw?.[i] ?? 0,
+        }))
+      )
+    : priceNetData;
+
   // Chart 2: Charge / Discharge schedules (area, both positive)
   const scheduleData = TIME_LABELS.map((time, i) => ({
     time,
@@ -84,11 +95,37 @@ export default function ArbitrageResults() {
     discharge_kw: results?.schedule_discharge_kw?.[i] ?? 0,
   }));
 
+  // For period mode: flatten charge/discharge schedule for all days
+  const allScheduleData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 96 }, (_, i) => ({
+          time: `${day.date} ${formatTime(i)}`,
+          charge_kw:    day.schedule_charge_kw?.[i] ?? 0,
+          discharge_kw: day.schedule_discharge_kw?.[i] ?? 0,
+        }))
+      )
+    : scheduleData;
+
   // Chart 3: SOC curve (97 points)
   const socData = Array.from({ length: 97 }, (_, i) => ({
     time:    i === 0 ? '00:00' : TIME_LABELS[i - 1],
     soc_pct: results?.soc_curve_pct?.[i] ?? 0,
   }));
+
+  // For period mode: flatten SOC curve for all days
+  const allSocData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 97 }, (_, i) => ({
+          time:    i === 0 ? `${day.date} 00:00` : `${day.date} ${formatTime(i - 1)}`,
+          soc_pct: day.soc_curve_pct?.[i] ?? 0,
+        }))
+      )
+    : socData;
+
+  // X-axis tick formatter: in period mode only show date label at first interval of each day
+  const xTickFormatter = isPeriod
+    ? (value: string, index: number) => index % 96 === 0 ? value.split(' ')[0] : ''
+    : (value: string) => value;
 
   const handleNewOptimization = () => {
     navigate(pid ? `/projekte/${pid}/wizard` : '/');
@@ -219,7 +256,7 @@ export default function ArbitrageResults() {
             />
           </div>
 
-          {/* Multi-day: daily net profit bar chart */}
+          {/* Multi-day overview: daily net profit bar chart */}
           {isPeriod && periodDays.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Netto-Gewinn</h2>
@@ -237,22 +274,19 @@ export default function ArbitrageResults() {
             </div>
           )}
 
-          {/* Single-day charts */}
-          {!isPeriod && results && (<>
-
-          {/* Chart 1: Price + Net grid power */}
+          {/* Chart 1: Price + Net grid power — shown in both single-day and period mode */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">
               Strompreise &amp; Netzleistung (+ Bezug / − V2G Einspeisung)
             </h2>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={priceNetData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+              <ComposedChart data={isPeriod ? allPriceNetData : priceNetData} margin={{ top: 5, right: 30, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                  interval={3}
+                  tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                  interval={isPeriod ? 95 : 3}
                 />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} unit=" kW" />
                 <YAxis
@@ -284,6 +318,7 @@ export default function ArbitrageResults() {
                   dot={false}
                   name="net_grid_kw"
                 />
+                <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -294,13 +329,13 @@ export default function ArbitrageResults() {
               Lade- und Entladeplan [kW]
             </h2>
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <AreaChart data={isPeriod ? allScheduleData : scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                  interval={3}
+                  tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                  interval={isPeriod ? 95 : 3}
                 />
                 <YAxis tick={{ fontSize: 10 }} unit=" kW" />
                 <Tooltip formatter={(v: number, name: string) => [
@@ -328,6 +363,7 @@ export default function ArbitrageResults() {
                   dot={false}
                   name="discharge_kw"
                 />
+                <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -336,22 +372,24 @@ export default function ArbitrageResults() {
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">SOC-Verlauf [%]</h2>
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={socData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <LineChart data={isPeriod ? allSocData : socData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                  interval={3}
+                  tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                  interval={isPeriod ? 96 : 3}
                 />
                 <YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
                 <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'SOC']} />
-                <ReferenceLine
-                  y={latestData?.results?.soc_curve_pct?.[0] ?? 0}
-                  stroke="#94a3b8"
-                  strokeDasharray="4 2"
-                  label={{ value: 'Ankunft-SOC', fontSize: 10, fill: '#94a3b8' }}
-                />
+                {!isPeriod && (
+                  <ReferenceLine
+                    y={latestData?.results?.soc_curve_pct?.[0] ?? 0}
+                    stroke="#94a3b8"
+                    strokeDasharray="4 2"
+                    label={{ value: 'Ankunft-SOC', fontSize: 10, fill: '#94a3b8' }}
+                  />
+                )}
                 <Line
                   type="monotone"
                   dataKey="soc_pct"
@@ -360,11 +398,13 @@ export default function ArbitrageResults() {
                   dot={false}
                   name="soc_pct"
                 />
+                <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Summary table */}
+          {/* Summary table — single day only */}
+          {!isPeriod && results && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
               <h2 className="text-sm font-semibold text-slate-700">Ergebniszusammenfassung</h2>
@@ -410,7 +450,7 @@ export default function ArbitrageResults() {
               </table>
             </div>
           </div>
-          </>)}
+          )}
         </>
       )}
 

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import {
   ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine,
+  Legend, ResponsiveContainer, ReferenceLine, Brush,
 } from 'recharts';
 import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown } from 'lucide-react';
 import { useRunOptimization, useOptimizationLatest, OptimizationRunResult, VehicleOptResult } from '@/lib/api';
@@ -134,6 +134,17 @@ export default function OptimizationResults() {
     fleet_kw: results?.fleet_power_kw?.[i] ?? 0,
   }));
 
+  // For period mode: flatten all days into one continuous series
+  const allPriceFleetData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 96 }, (_, i) => ({
+          time: `${day.date} ${formatTime(i)}`,
+          price_eurkwh: day.prices_15min?.[i] ?? 0,
+          fleet_kw: day.fleet_power_kw?.[i] ?? 0,
+        }))
+      )
+    : priceFleetData;
+
   // Build per-vehicle schedule chart data (stacked)
   const scheduleData = TIME_LABELS.map((time, i) => {
     const entry: Record<string, number | string> = { time };
@@ -145,6 +156,29 @@ export default function OptimizationResults() {
     return entry;
   });
 
+  // For period mode: flatten schedule data for all days
+  const allScheduleData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 96 }, (_, i) => {
+          const entry: Record<string, number | string> = { time: `${day.date} ${formatTime(i)}` };
+          if (day.vehicles) {
+            day.vehicles.forEach((vr: any) => {
+              entry[vr.vehicle_name] = vr.schedule_kw?.[i] ?? 0;
+            });
+          }
+          return entry;
+        })
+      )
+    : scheduleData;
+
+  // For period mode: determine vehicle names from first day that has vehicles
+  const periodVehicleNames: string[] = isPeriod
+    ? (() => {
+        const firstDayWithVehicles = periodDays.find((d: any) => d.vehicles?.length > 0);
+        return firstDayWithVehicles?.vehicles?.map((v: any) => v.vehicle_name) ?? [];
+      })()
+    : [];
+
   // Build SOC curve data (97 points, but we use 96 time labels + initial)
   const socData = Array.from({ length: 97 }, (_, i) => {
     const entry: Record<string, number | string> = { time: i === 0 ? '00:00' : TIME_LABELS[i - 1] };
@@ -155,6 +189,31 @@ export default function OptimizationResults() {
     }
     return entry;
   });
+
+  // For period mode: flatten SOC data for all days (97 points per day)
+  const allSocData = isPeriod
+    ? periodDays.flatMap((day: any) =>
+        Array.from({ length: 97 }, (_, i) => {
+          const entry: Record<string, number | string> = {
+            time: i === 0 ? `${day.date} 00:00` : `${day.date} ${formatTime(i - 1)}`,
+          };
+          if (day.vehicles) {
+            day.vehicles.forEach((vr: any) => {
+              entry[vr.vehicle_name] = vr.soc_curve_pct?.[i] ?? 0;
+            });
+          }
+          return entry;
+        })
+      )
+    : socData;
+
+  // X-axis tick formatter: in period mode only show date label at first interval of each day
+  const xTickFormatter = isPeriod
+    ? (value: string, index: number) => index % 96 === 0 ? value.split(' ')[0] : ''
+    : (value: string) => value;
+
+  // Vehicles to render in period charts
+  const chartVehicles = isPeriod ? periodVehicleNames : (results?.vehicles?.map(v => v.vehicle_name) ?? []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -361,7 +420,7 @@ export default function OptimizationResults() {
             />
           </div>
 
-          {/* Multi-day: daily cost bar chart */}
+          {/* Multi-day overview: daily cost bar chart */}
           {isPeriod && periodDays.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Ladekosten</h2>
@@ -377,18 +436,17 @@ export default function OptimizationResults() {
             </div>
           )}
 
-          {/* Single-day charts */}
-          {!isPeriod && results && (<>
+          {/* Detailed charts — shown in both single-day and period mode */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-sm font-semibold text-slate-700 mb-4">Strompreise & Flotten-Ladeplan</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={priceFleetData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+              <ComposedChart data={isPeriod ? allPriceFleetData : priceFleetData} margin={{ top: 5, right: 30, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                  interval={3}
+                  tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                  interval={isPeriod ? 95 : 3}
                 />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} unit=" kW" />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} unit=" ct" tickFormatter={(v) => (v * 100).toFixed(1)} />
@@ -404,31 +462,32 @@ export default function OptimizationResults() {
                 />
                 <Bar yAxisId="right" dataKey="price_eurkwh" fill="#fde68a" opacity={0.7} name="price_eurkwh" />
                 <Line yAxisId="left" type="monotone" dataKey="fleet_kw" stroke="#16a34a" strokeWidth={2} dot={false} name="fleet_kw" />
+                <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
 
           {/* Per-vehicle charging schedule */}
-          {results.vehicles.length > 0 && (
+          {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-sm font-semibold text-slate-700 mb-4">Ladeplan je Fahrzeug [kW]</h2>
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <AreaChart data={isPeriod ? allScheduleData : scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis
                     dataKey="time"
                     tick={{ fontSize: 10 }}
-                    tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                    interval={3}
+                    tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                    interval={isPeriod ? 95 : 3}
                   />
                   <YAxis tick={{ fontSize: 10 }} unit=" kW" />
                   <Tooltip formatter={(v: number, name: string) => [`${v.toFixed(1)} kW`, name]} />
                   <Legend />
-                  {results.vehicles.map((vr, idx) => (
+                  {(isPeriod ? periodVehicleNames : results!.vehicles.map(v => v.vehicle_name)).map((name, idx) => (
                     <Area
-                      key={vr.vehicle_id}
+                      key={name}
                       type="monotone"
-                      dataKey={vr.vehicle_name}
+                      dataKey={name}
                       stackId="1"
                       stroke={VEHICLE_COLORS[idx % VEHICLE_COLORS.length]}
                       fill={VEHICLE_COLORS[idx % VEHICLE_COLORS.length]}
@@ -436,45 +495,48 @@ export default function OptimizationResults() {
                       dot={false}
                     />
                   ))}
+                  <Brush dataKey="time" height={20} stroke="#94a3b8" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
 
           {/* SOC curves */}
-          {results.vehicles.length > 0 && (
+          {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-sm font-semibold text-slate-700 mb-4">SOC-Verlauf je Fahrzeug [%]</h2>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={socData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <LineChart data={isPeriod ? allSocData : socData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis
                     dataKey="time"
                     tick={{ fontSize: 10 }}
-                    tickFormatter={(v, i) => i % 4 === 0 ? v : ''}
-                    interval={3}
+                    tickFormatter={isPeriod ? xTickFormatter : (v, i) => i % 4 === 0 ? v : ''}
+                    interval={isPeriod ? 96 : 3}
                   />
                   <YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
                   <Tooltip formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]} />
                   <Legend />
                   <ReferenceLine y={socTarget} stroke="#dc2626" strokeDasharray="4 2" label={{ value: `Ziel ${socTarget}%`, fontSize: 10, fill: '#dc2626' }} />
                   <ReferenceLine y={socMin} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: `Min ${socMin}%`, fontSize: 10, fill: '#f59e0b' }} />
-                  {results.vehicles.map((vr, idx) => (
+                  {(isPeriod ? periodVehicleNames : results!.vehicles.map(v => v.vehicle_name)).map((name, idx) => (
                     <Line
-                      key={vr.vehicle_id}
+                      key={name}
                       type="monotone"
-                      dataKey={vr.vehicle_name}
+                      dataKey={name}
                       stroke={VEHICLE_COLORS[idx % VEHICLE_COLORS.length]}
                       strokeWidth={2}
                       dot={false}
                     />
                   ))}
+                  <Brush dataKey="time" height={20} stroke="#94a3b8" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* Vehicle cost table */}
+          {/* Vehicle cost table — single day only */}
+          {!isPeriod && results && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
               <h2 className="text-sm font-semibold text-slate-700">Kosten je Fahrzeug</h2>
@@ -522,7 +584,7 @@ export default function OptimizationResults() {
               </table>
             </div>
           </div>
-          </>)}
+          )}
         </>
       )}
 
