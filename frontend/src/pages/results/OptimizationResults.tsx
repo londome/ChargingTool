@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine, Brush,
 } from 'recharts';
-import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown } from 'lucide-react';
+import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown, LayoutDashboard, Download } from 'lucide-react';
 import { useRunOptimization, useOptimizationLatest, OptimizationRunResult, VehicleOptResult } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 
@@ -65,8 +65,17 @@ function KpiCard({ label, value, sub, icon: Icon, color = 'blue' }: KpiCardProps
   );
 }
 
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function OptimizationResults() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const { activeProject, wizard } = useProjectStore();
 
   // Pre-fill from wizard store (Step 3 Depot + Step 4)
@@ -217,11 +226,39 @@ export default function OptimizationResults() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Ladeprozess Optimierung</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          LP-basierte kostenoptimale Ladeplanung mit ENTSO-E Day-Ahead Preisen
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Ladeprozess Optimierung</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            LP-basierte kostenoptimale Ladeplanung mit ENTSO-E Day-Ahead Preisen
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {isOptimal && (
+            <button
+              onClick={() => {
+                const r = results!;
+                const header = ['Zeit', 'Preis (€/kWh)', 'Flotte (kW)', ...r.vehicles.map(v => v.vehicle_name)];
+                const rows = Array.from({ length: 96 }, (_, i) => [
+                  `${String(Math.floor(i * 15 / 60)).padStart(2,'0')}:${String((i * 15) % 60).padStart(2,'0')}`,
+                  String(r.prices_15min?.[i]?.toFixed(4) ?? ''),
+                  String(r.fleet_power_kw?.[i]?.toFixed(2) ?? ''),
+                  ...r.vehicles.map(v => String(v.schedule_kw[i]?.toFixed(2) ?? '')),
+                ]);
+                downloadCsv('ladeoptimierung.csv', [header, ...rows]);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+            >
+              <Download className="w-4 h-4" /> CSV
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            <LayoutDashboard className="w-4 h-4" /> Fertig
+          </button>
+        </div>
       </div>
 
       {/* Controls */}

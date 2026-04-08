@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Battery, TrendingUp, TrendingDown, DollarSign,
-  AlertTriangle, Loader2, RefreshCw, ArrowLeft,
+  AlertTriangle, Loader2, RefreshCw, ArrowLeft, LayoutDashboard, Download,
 } from 'lucide-react';
 import { useArbitrageLatest, ArbitrageRunResult } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
@@ -48,6 +48,14 @@ function KpiCard({ label, value, sub, icon: Icon, color = 'blue' }: KpiCardProps
       </div>
     </div>
   );
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function ArbitrageResults() {
@@ -141,13 +149,41 @@ export default function ArbitrageResults() {
             Bidirektionale Ladeoptimierung der EV-Flotte mit ENTSO-E Day-Ahead Preisen
           </p>
         </div>
-        <button
-          onClick={handleNewOptimization}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Neue Optimierung
-        </button>
+        <div className="flex gap-2">
+          {isOptimal && (
+            <button
+              onClick={() => {
+                const r = results!;
+                const header = ['Zeit', 'Preis (€/kWh)', 'Netz (kW)', 'Laden (kW)', 'Entladen (kW)', 'SOC (%)'];
+                const rows = Array.from({ length: 96 }, (_, i) => [
+                  `${String(Math.floor(i * 15 / 60)).padStart(2,'0')}:${String((i * 15) % 60).padStart(2,'0')}`,
+                  String(r.prices_15min?.[i]?.toFixed(4) ?? ''),
+                  String(r.net_grid_kw?.[i]?.toFixed(2) ?? ''),
+                  String(r.schedule_charge_kw?.[i]?.toFixed(2) ?? ''),
+                  String(r.schedule_discharge_kw?.[i]?.toFixed(2) ?? ''),
+                  String(r.soc_curve_pct?.[i]?.toFixed(1) ?? ''),
+                ]);
+                downloadCsv('arbitrage.csv', [header, ...rows]);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+            >
+              <Download className="w-4 h-4" /> CSV
+            </button>
+          )}
+          <button
+            onClick={handleNewOptimization}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Neue Optimierung
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            <LayoutDashboard className="w-4 h-4" /> Fertig
+          </button>
+        </div>
       </div>
 
       {/* Info row */}

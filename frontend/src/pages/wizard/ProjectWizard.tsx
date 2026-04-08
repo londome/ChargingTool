@@ -23,8 +23,8 @@ const STEPS_OPTIMIERUNG = [
   { number: 3, label: 'Depot' },
   { number: 4, label: 'Ladeinfrastruktur' },
   { number: 5, label: 'EV-Auswahl' },
-  { number: 6, label: 'Szenarien' },
-  { number: 7, label: 'Ladestrategie' },
+  { number: 6, label: 'Ladestrategie' },
+  // Szenarien (Step6Scenarios) intentionally omitted — reserved for future use
 ];
 
 const STEPS_LADEPROZESS = [
@@ -211,12 +211,11 @@ export default function ProjectWizard() {
         {wizard.wizardModule === 'ladeprozess' && currentStep === 5 && <Step5EVSelection />}
         {wizard.wizardModule === 'ladeprozess' && currentStep === 6 && <Step6Scenarios />}
 
-        {/* Ladeprozess Optimierung module steps (7-step flow) */}
+        {/* Ladeprozess Optimierung module steps (6-step flow, Szenarien skipped) */}
         {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 3 && <Step3Depot />}
         {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 4 && <Step4Ladeinfrastruktur />}
         {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 5 && <Step5EVSelection />}
-        {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 6 && <Step6Scenarios />}
-        {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 7 && <Step7ChargingStrategy />}
+        {wizard.wizardModule === 'ladeprozess_optimierung' && currentStep === 6 && <Step7ChargingStrategy />}
 
         {/* Ladeprozess Bidirektional module steps (4-step flow) */}
         {wizard.wizardModule === 'ladeprozess_bidirektional' && currentStep === 3 && <Step3Depot />}
