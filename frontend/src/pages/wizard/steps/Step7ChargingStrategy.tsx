@@ -180,7 +180,7 @@ export default function Step7ChargingStrategy() {
             <span className="font-medium text-slate-800">{socTargetDefault} %</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">SOC-Minimum</span>
+            <span className="text-slate-500">Min. SOC bei Ankunft</span>
             <span className="font-medium text-slate-800">{socMinDefault} %</span>
           </div>
         </div>

@@ -69,12 +69,13 @@ router.post('/run', async (req: Request, res: Response) => {
         // 3. EV specs from selected_ev_ids (same pattern as optimization.ts)
         let batteryKwh = 60;
         let evMaxChargePower = wallbox_power_kw;
+        let nominalConsumptionKwh100km = 25;
 
         if (selected_ev_ids && Array.isArray(selected_ev_ids) && selected_ev_ids.length > 0) {
           const evResult = await query<{
-            model: string; battery_usable_kwh: number; max_ac_kw: number;
+            model: string; battery_usable_kwh: number; max_ac_kw: number; nominal_consumption_kwh_100km: number;
           }>(
-            `SELECT model, battery_usable_kwh, max_ac_kw
+            `SELECT model, battery_usable_kwh, max_ac_kw, nominal_consumption_kwh_100km
              FROM ev_models WHERE id = ANY($1::uuid[]) AND is_active = TRUE LIMIT 1`,
             [selected_ev_ids]
           );
@@ -82,6 +83,7 @@ router.post('/run', async (req: Request, res: Response) => {
             const ev = evResult.rows[0];
             batteryKwh = parseFloat(String(ev.battery_usable_kwh)) || 60;
             evMaxChargePower = parseFloat(String(ev.max_ac_kw)) || wallbox_power_kw;
+            nominalConsumptionKwh100km = parseFloat(String(ev.nominal_consumption_kwh_100km)) || 25;
           }
         }
         const maxPowerKw = Math.min(wallbox_power_kw, evMaxChargePower);
@@ -106,7 +108,8 @@ router.post('/run', async (req: Request, res: Response) => {
             : '17:00';
 
         // 5. Compute SOC at arrival from route energy consumption
-        // route_results.ev_energy_kwh = ANNUAL energy (× trips_per_year)
+        // Strategy 1: use route_results from simulation (annual ev_energy_kwh / trips_per_year)
+        // Strategy 2 (fallback): routes.distance_km × EV nominal consumption
         const routeEnergyResult = await query<{
           ev_energy_kwh: number; trips_per_year: number;
         }>(
@@ -120,10 +123,24 @@ router.post('/run', async (req: Request, res: Response) => {
         );
 
         let dailyEnergyKwh = 0;
-        for (const r of routeEnergyResult.rows) {
-          const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
-          const annualKwh = parseFloat(String(r.ev_energy_kwh)) || 0;
-          dailyEnergyKwh += annualKwh / tripsPerYear;
+        if (routeEnergyResult.rows.length > 0) {
+          for (const r of routeEnergyResult.rows) {
+            const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
+            const annualKwh = parseFloat(String(r.ev_energy_kwh)) || 0;
+            dailyEnergyKwh += annualKwh / tripsPerYear;
+          }
+        } else {
+          // Fallback: estimate from distance × nominal EV consumption
+          const routeDistResult = await query<{
+            distance_km: number; trips_per_year: number;
+          }>(
+            `SELECT distance_km, trips_per_year FROM routes WHERE project_id = $1`,
+            [project_id]
+          );
+          for (const r of routeDistResult.rows) {
+            const dist = parseFloat(String(r.distance_km)) || 0;
+            dailyEnergyKwh += (dist * nominalConsumptionKwh100km) / 100;
+          }
         }
 
         const socDropPct = batteryKwh > 0 ? (dailyEnergyKwh / batteryKwh) * 100 : 0;
@@ -167,6 +184,7 @@ router.post('/run', async (req: Request, res: Response) => {
           let totalRevenue = 0;
           let totalCost = 0;
           let totalCycles = 0;
+          let totalChargeOnly = 0;
           const dayResults: object[] = [];
 
           for (const dayPrices of periodResult.days) {
@@ -180,16 +198,20 @@ router.post('/run', async (req: Request, res: Response) => {
             totalRevenue += arbResult.total_revenue_eur ?? 0;
             totalCost += arbResult.total_cost_eur ?? 0;
             totalCycles += arbResult.cycles ?? 0;
+            totalChargeOnly += arbResult.charge_only_cost_eur ?? 0;
             dayResults.push({
               date: dayPrices.date,
               net_profit_eur: arbResult.net_profit_eur,
               total_revenue_eur: arbResult.total_revenue_eur,
               total_cost_eur: arbResult.total_cost_eur,
+              charge_only_cost_eur: arbResult.charge_only_cost_eur,
               cycles: arbResult.cycles,
               schedule_charge_kw: arbResult.schedule_charge_kw,
               schedule_discharge_kw: arbResult.schedule_discharge_kw,
               net_grid_kw: arbResult.net_grid_kw,
               soc_curve_pct: arbResult.soc_curve_pct,
+              reference_charge_kw: arbResult.reference_charge_kw,
+              reference_soc_curve_pct: arbResult.reference_soc_curve_pct,
               prices_15min: dayPrices.prices_15min,
               status: arbResult.status,
             });
@@ -202,6 +224,7 @@ router.post('/run', async (req: Request, res: Response) => {
               net_profit_eur: totalNetProfit,
               total_revenue_eur: totalRevenue,
               total_cost_eur: totalCost,
+              charge_only_cost_eur: totalChargeOnly,
               total_cycles: totalCycles,
               days_count: periodResult.total_days,
             },

@@ -188,6 +188,16 @@ export default function Dashboard() {
                               Ladeprozess Simulator
                             </span>
                           )}
+                          {project.wizard_module === 'ladeprozess_optimierung' && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Ladeoptimierung
+                            </span>
+                          )}
+                          {project.wizard_module === 'ladeprozess_bidirektional' && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                              Bidirektional & Arbitrage
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-400">
                           {project.industry} · {project.depot_location} · Erstellt {formatDate(project.created_at)}

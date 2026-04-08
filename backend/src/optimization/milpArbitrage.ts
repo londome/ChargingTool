@@ -30,17 +30,20 @@ export interface ArbitrageInput {
 
 export interface ArbitrageResult {
   status: 'optimal' | 'infeasible' | 'error';
-  schedule_charge_kw: number[];    // 96 values
-  schedule_discharge_kw: number[]; // 96 values
-  net_grid_kw: number[];           // 96 values: +charge from grid, -discharge to grid
-  soc_curve_pct: number[];         // 97 values (initial + 96 end-of-interval)
+  schedule_charge_kw: number[];         // 96 values — V2G optimized
+  schedule_discharge_kw: number[];      // 96 values — V2G optimized
+  net_grid_kw: number[];                // 96 values: +charge, -discharge
+  soc_curve_pct: number[];              // 97 values (initial + 96 end-of-interval)
+  reference_charge_kw: number[];        // 96 values — greedy charge-only baseline
+  reference_soc_curve_pct: number[];    // 97 values — SOC curve for reference plan
   total_revenue_eur: number;
   total_cost_eur: number;
   net_profit_eur: number;
+  charge_only_cost_eur: number;         // baseline cost (greedy charging)
   computation_time_ms: number;
   date: string;
   prices_15min: number[];
-  cycles: number;                  // number of full charge/discharge cycles
+  cycles: number;
 }
 
 const DT = 0.25; // 15 min = 0.25 h
@@ -64,20 +67,53 @@ export async function solveArbitrage(input: ArbitrageInput): Promise<ArbitrageRe
     date,
   } = input;
 
-  const empty = (): ArbitrageResult => ({
-    status: 'error',
-    schedule_charge_kw: Array(N).fill(0),
-    schedule_discharge_kw: Array(N).fill(0),
-    net_grid_kw: Array(N).fill(0),
-    soc_curve_pct: Array(N + 1).fill(soc_initial_pct),
-    total_revenue_eur: 0,
-    total_cost_eur: 0,
-    net_profit_eur: 0,
-    computation_time_ms: Date.now() - startTime,
-    date,
-    prices_15min,
-    cycles: 0,
-  });
+  // Greedy charge-only baseline (no V2G) — returns schedule, SOC curve and cost
+  const computeChargeOnly = (): {
+    cost: number;
+    schedule_kw: number[];
+    soc_curve: number[];
+  } => {
+    let soc = soc_initial_pct;
+    let cost = 0;
+    const schedule_kw = Array(N).fill(0);
+    const soc_curve: number[] = [soc_initial_pct];
+    for (let t = 0; t < N; t++) {
+      const inWindow = t >= arrival_interval && t < departure_interval;
+      if (inWindow && soc < soc_final_pct) {
+        const socNeeded = soc_final_pct - soc;
+        const gridEnergyNeeded = (socNeeded / 100) * battery_kwh / eta_c;
+        const p = Math.min(max_power_kw, gridEnergyNeeded / DT, gcp_max_kw);
+        if (p > 0.001) {
+          schedule_kw[t] = p;
+          soc = Math.min(soc_max_pct, soc + (p * DT * eta_c / battery_kwh) * 100);
+          cost += p * DT * prices_15min[t];
+        }
+      }
+      soc_curve.push(soc);
+    }
+    return { cost, schedule_kw, soc_curve };
+  };
+
+  const empty = (): ArbitrageResult => {
+    const ref = computeChargeOnly();
+    return {
+      status: 'error',
+      schedule_charge_kw: Array(N).fill(0),
+      schedule_discharge_kw: Array(N).fill(0),
+      net_grid_kw: Array(N).fill(0),
+      soc_curve_pct: Array(N + 1).fill(soc_initial_pct),
+      reference_charge_kw: ref.schedule_kw,
+      reference_soc_curve_pct: ref.soc_curve,
+      total_revenue_eur: 0,
+      total_cost_eur: 0,
+      net_profit_eur: 0,
+      charge_only_cost_eur: ref.cost,
+      computation_time_ms: Date.now() - startTime,
+      date,
+      prices_15min,
+      cycles: 0,
+    };
+  };
 
   try {
     // SOC contribution coefficients
@@ -217,15 +253,19 @@ export async function solveArbitrage(input: ArbitrageInput): Promise<ArbitrageRe
     const total_charge_kwh = schedule_charge_kw.reduce((s, p) => s + p * DT, 0);
     const cycles = battery_kwh > 0 ? total_charge_kwh / battery_kwh : 0;
 
+    const ref = computeChargeOnly();
     return {
       status: 'optimal',
       schedule_charge_kw,
       schedule_discharge_kw,
       net_grid_kw,
       soc_curve_pct,
+      reference_charge_kw: ref.schedule_kw,
+      reference_soc_curve_pct: ref.soc_curve,
       total_revenue_eur,
       total_cost_eur,
       net_profit_eur,
+      charge_only_cost_eur: ref.cost,
       computation_time_ms: Date.now() - startTime,
       date,
       prices_15min,

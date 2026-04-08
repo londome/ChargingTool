@@ -4,7 +4,8 @@ import {
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine, Brush,
 } from 'recharts';
-import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown, LayoutDashboard, Download } from 'lucide-react';
+import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown, LayoutDashboard, Download, TrendingUp, Activity, BarChart2 } from 'lucide-react';
+import { Cell } from 'recharts';
 import { useOptimizationLatest, OptimizationRunResult, VehicleOptResult } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 
@@ -86,20 +87,67 @@ export default function OptimizationResults() {
   const isPeriod = rawResults?.type === 'period';
   const results: OptimizationRunResult | null = isPeriod ? null : (rawResults as OptimizationRunResult | null);
   const periodTotals = isPeriod ? rawResults?.totals : null;
-  const periodDays: { date: string; total_cost_eur: number; total_energy_kwh: number }[] = isPeriod ? (rawResults?.days ?? []) : [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const periodDays: any[] = isPeriod ? (rawResults?.days ?? []) : [];
   const isLoading = latestData?.status === 'pending' || latestData?.status === 'running';
   const isError = latestData?.status === 'failed';
   const isInfeasible = results?.status === 'infeasible';
   const isOptimal = results?.status === 'optimal' || isPeriod;
   const socArrivalWarning: string | null = rawResults?.soc_arrival_warning ?? null;
   const socArrivalPct: number | null = rawResults?.soc_arrival_pct ?? null;
+  const socTarget: number = wizard?.step4?.soc_target ?? 80;
+  const socMin: number = wizard?.step4?.soc_min ?? 20;
 
-  // Build chart data for price + fleet power
+  // Build chart data for price + fleet power (optimized + naive)
   const priceFleetData = TIME_LABELS.map((time, i) => ({
     time,
     price_eurkwh: results?.prices_15min?.[i] ?? 0,
     fleet_kw: results?.fleet_power_kw?.[i] ?? 0,
+    naive_kw: results?.naive_fleet_power_kw?.[i] ?? 0,
   }));
+
+  // Kostenvergleich: Optimiert vs Sofortladen
+  const naiveCost = results?.naive_total_cost_eur ?? 0;
+  const optimCost = results?.total_cost_eur ?? 0;
+  const savingsEur = naiveCost - optimCost;
+  const savingsPct = naiveCost > 0 ? (savingsEur / naiveCost) * 100 : 0;
+  const kostenvergleichData = [
+    { name: 'Sofortladen', cost: naiveCost, fill: '#94a3b8' },
+    { name: 'Optimiert', cost: optimCost, fill: '#16a34a' },
+  ];
+
+  // Preishistogramm: energy charged per price bin
+  const priceHistData = (() => {
+    if (!results) return [];
+    const BIN_SIZE = 2; // ct/kWh per bin
+    const bins: Record<number, number> = {};
+    results.prices_15min.forEach((p, i) => {
+      const ctKwh = p * 100;
+      const bin = Math.floor(ctKwh / BIN_SIZE) * BIN_SIZE;
+      const energyCharged = results.fleet_power_kw[i] * 0.25;
+      bins[bin] = (bins[bin] ?? 0) + energyCharged;
+    });
+    return Object.entries(bins)
+      .map(([b, e]) => ({ bin: `${b}–${+b + BIN_SIZE} ct`, binVal: Number(b), energy: +e.toFixed(2) }))
+      .sort((a, b) => a.binVal - b.binVal);
+  })();
+
+  // Weekly grouping for multi-day period
+  const weeklyData = (() => {
+    if (!isPeriod || periodDays.length === 0) return [];
+    const weeks: Record<string, { week: string; cost: number; energy: number; days: number }> = {};
+    periodDays.forEach((d: any) => {
+      const date = new Date(d.date);
+      const y = date.getFullYear();
+      const w = Math.ceil((((date.getTime() - new Date(y, 0, 1).getTime()) / 86400000) + new Date(y, 0, 1).getDay() + 1) / 7);
+      const key = `KW${w}`;
+      if (!weeks[key]) weeks[key] = { week: key, cost: 0, energy: 0, days: 0 };
+      weeks[key].cost += d.total_cost_eur ?? 0;
+      weeks[key].energy += d.total_energy_kwh ?? 0;
+      weeks[key].days += 1;
+    });
+    return Object.values(weeks);
+  })();
 
   // For period mode: flatten all days into one continuous series
   const allPriceFleetData = isPeriod
@@ -309,7 +357,7 @@ export default function OptimizationResults() {
             <KpiCard
               label="Gesamtkosten"
               value={`${isPeriod ? periodTotals?.total_cost_eur?.toFixed(2) : results!.total_cost_eur.toFixed(2)} €`}
-              sub={isPeriod ? `${periodTotals?.days_count} Tage` : `für ${latestData?.optimization_date ?? date}`}
+              sub={isPeriod ? `${periodTotals?.days_count} Tage` : `für ${latestData?.optimization_date ?? '—'}`}
               icon={DollarSign}
               color="green"
             />
@@ -455,6 +503,114 @@ export default function OptimizationResults() {
             </div>
           )}
 
+          {/* ── Kostenvergleich: Optimiert vs Sofortladen (single day) ────────── */}
+          {!isPeriod && results && naiveCost > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-green-600" />
+                  Kostenvergleich: Optimiert vs. Sofortladen
+                </h2>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                  <TrendingDown className="w-3.5 h-3.5 text-green-600" />
+                  <span className="text-xs font-semibold text-green-700">
+                    Ersparnis: {savingsEur.toFixed(3)} € ({savingsPct.toFixed(1)} %)
+                  </span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={kostenvergleichData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }} barSize={60}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" €" />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(3)} €`, 'Ladekosten']} />
+                  <Bar dataKey="cost" radius={[6, 6, 0, 0]} label={{ position: 'top', fontSize: 11, formatter: (v: number) => `${v.toFixed(3)} €` }}>
+                    {kostenvergleichData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── GCP-Auslastung: Optimiert vs Sofortladen ────────────────────── */}
+          {!isPeriod && results && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-600" />
+                GCP-Auslastung: Optimiert vs. Sofortladen
+              </h2>
+              <p className="text-xs text-slate-400 mb-4">
+                Grün = LP-optimierter Plan · Grau = Sofortladen · Rote Linie = GCP-Limit ({latestData?.gcp_max_kw} kW)
+              </p>
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart data={priceFleetData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="time" tick={{ fontSize: 10 }} tickFormatter={(v, i) => i % 4 === 0 ? v : ''} interval={3} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" kW" />
+                  <Tooltip formatter={(v: number, name: string) => [`${v.toFixed(1)} kW`, name === 'fleet_kw' ? 'Optimiert' : 'Sofortladen']} />
+                  <Legend formatter={(v) => v === 'fleet_kw' ? 'Optimiert [kW]' : 'Sofortladen [kW]'} />
+                  <ReferenceLine y={latestData?.gcp_max_kw ?? 100} stroke="#dc2626" strokeDasharray="4 2" label={{ value: `GCP ${latestData?.gcp_max_kw ?? ''}kW`, fontSize: 10, fill: '#dc2626' }} />
+                  <Area type="monotone" dataKey="naive_kw" stroke="#94a3b8" fill="#e2e8f0" fillOpacity={0.6} dot={false} name="naive_kw" />
+                  <Area type="monotone" dataKey="fleet_kw" stroke="#16a34a" fill="#bbf7d0" fillOpacity={0.7} dot={false} name="fleet_kw" />
+                  <Brush dataKey="time" height={20} stroke="#94a3b8" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Preishistogramm: Energie je Preisklasse ──────────────────────── */}
+          {!isPeriod && priceHistData.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-amber-600" />
+                Ladeenergie nach Preisklasse
+              </h2>
+              <p className="text-xs text-slate-400 mb-4">
+                Zeigt in welchen Preisniveaus der Optimierer geladen hat — günstige Klassen sollten dominieren.
+              </p>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={priceHistData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="bin" tick={{ fontSize: 9 }} angle={-30} textAnchor="end" interval={0} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" kWh" />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(2)} kWh`, 'Geladene Energie']} />
+                  <Bar dataKey="energy" radius={[4, 4, 0, 0]} name="energy">
+                    {priceHistData.map((entry, i) => (
+                      <Cell key={i} fill={entry.binVal < 10 ? '#16a34a' : entry.binVal < 20 ? '#65a30d' : entry.binVal < 30 ? '#f59e0b' : '#dc2626'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Wochenübersicht (nur Mehrtages-Modus) ────────────────────────── */}
+          {isPeriod && weeklyData.length > 1 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+                Wochenübersicht – Ladekosten &amp; Energie
+              </h2>
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart data={weeklyData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 10 }} unit=" €" />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} unit=" kWh" />
+                  <Tooltip formatter={(v: number, name: string) => [
+                    name === 'cost' ? `${v.toFixed(2)} €` : `${v.toFixed(1)} kWh`,
+                    name === 'cost' ? 'Ladekosten' : 'Energie'
+                  ]} />
+                  <Legend formatter={(v) => v === 'cost' ? 'Ladekosten [€]' : 'Energie [kWh]'} />
+                  <Bar yAxisId="left" dataKey="cost" fill="#16a34a" radius={[4, 4, 0, 0]} name="cost" />
+                  <Line yAxisId="right" type="monotone" dataKey="energy" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} name="energy" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Vehicle cost table — single day only */}
           {!isPeriod && results && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -466,7 +622,12 @@ export default function OptimizationResults() {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fahrzeug</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Energie [kWh]</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <span title="Energie die aus dem Netz bezogen wird (inkl. Ladeverluste)">Netz [kWh] ⓘ</span>
+                    </th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <span title="Energie die in der Batterie gespeichert wird = Verbrauch der Route">Batterie [kWh] ⓘ</span>
+                    </th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kosten [€]</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">SOC Ankunft</th>
                     <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">SOC Ziel</th>
@@ -483,6 +644,9 @@ export default function OptimizationResults() {
                         {vr.vehicle_name}
                       </td>
                       <td className="px-4 py-3 text-right text-slate-700">{vr.energy_kwh.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-right text-slate-500">
+                        {(vr.battery_energy_kwh ?? vr.energy_kwh * 0.92).toFixed(1)}
+                      </td>
                       <td className="px-4 py-3 text-right text-slate-700">{vr.cost_eur.toFixed(3)}</td>
                       <td className="px-4 py-3 text-right text-slate-500">
                         {vr.soc_curve_pct[0]?.toFixed(0) ?? '—'}%
@@ -497,6 +661,9 @@ export default function OptimizationResults() {
                   <tr>
                     <td className="px-6 py-3 font-semibold text-slate-700">Gesamt</td>
                     <td className="px-4 py-3 text-right font-semibold text-slate-700">{results.total_energy_kwh.toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right text-slate-500">
+                      {results.vehicles.reduce((s, v) => s + (v.battery_energy_kwh ?? v.energy_kwh * 0.92), 0).toFixed(1)}
+                    </td>
                     <td className="px-4 py-3 text-right font-semibold text-green-700">{results.total_cost_eur.toFixed(3)} €</td>
                     <td colSpan={2} />
                   </tr>
@@ -516,10 +683,18 @@ export default function OptimizationResults() {
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">Noch keine Optimierung durchgeführt</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Wählen Sie Parameter oben und klicken Sie auf "Optimierung starten".
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              Schließe den Wizard ab (Schritt 6 – Ladestrategie) um die LP-Optimierung zu starten.
             </p>
           </div>
+          {pid && (
+            <button
+              onClick={() => navigate(`/projekte/${pid}/wizard`)}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 mt-2"
+            >
+              <Zap className="w-4 h-4" /> Zum Wizard – Optimierung starten
+            </button>
+          )}
         </div>
       )}
     </div>

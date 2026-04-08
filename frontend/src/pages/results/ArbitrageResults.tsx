@@ -6,8 +6,9 @@ import {
 } from 'recharts';
 import {
   Battery, TrendingUp, TrendingDown, DollarSign,
-  AlertTriangle, Loader2, RefreshCw, ArrowLeft, LayoutDashboard, Download,
+  AlertTriangle, Loader2, RefreshCw, ArrowLeft, LayoutDashboard, Download, Activity, BarChart2,
 } from 'lucide-react';
+import { Cell } from 'recharts';
 import { useArbitrageLatest, ArbitrageRunResult } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 
@@ -99,25 +100,28 @@ export default function ArbitrageResults() {
   // Chart 2: Charge / Discharge schedules (area, both positive)
   const scheduleData = TIME_LABELS.map((time, i) => ({
     time,
-    charge_kw:    results?.schedule_charge_kw?.[i] ?? 0,
-    discharge_kw: results?.schedule_discharge_kw?.[i] ?? 0,
+    charge_kw:     results?.schedule_charge_kw?.[i] ?? 0,
+    discharge_kw:  results?.schedule_discharge_kw?.[i] ?? 0,
+    reference_kw:  results?.reference_charge_kw?.[i] ?? 0,
   }));
 
   // For period mode: flatten charge/discharge schedule for all days
   const allScheduleData = isPeriod
     ? periodDays.flatMap((day: any) =>
         Array.from({ length: 96 }, (_, i) => ({
-          time: `${day.date} ${formatTime(i)}`,
-          charge_kw:    day.schedule_charge_kw?.[i] ?? 0,
-          discharge_kw: day.schedule_discharge_kw?.[i] ?? 0,
+          time:          `${day.date} ${formatTime(i)}`,
+          charge_kw:     day.schedule_charge_kw?.[i] ?? 0,
+          discharge_kw:  day.schedule_discharge_kw?.[i] ?? 0,
+          reference_kw:  day.reference_charge_kw?.[i] ?? 0,
         }))
       )
     : scheduleData;
 
-  // Chart 3: SOC curve (97 points)
+  // Chart 3: SOC curve (97 points) — V2G + reference
   const socData = Array.from({ length: 97 }, (_, i) => ({
-    time:    i === 0 ? '00:00' : TIME_LABELS[i - 1],
-    soc_pct: results?.soc_curve_pct?.[i] ?? 0,
+    time:      i === 0 ? '00:00' : TIME_LABELS[i - 1],
+    soc_pct:   results?.soc_curve_pct?.[i] ?? 0,
+    soc_ref:   results?.reference_soc_curve_pct?.[i] ?? 0,
   }));
 
   // For period mode: flatten SOC curve for all days
@@ -126,6 +130,7 @@ export default function ArbitrageResults() {
         Array.from({ length: 97 }, (_, i) => ({
           time:    i === 0 ? `${day.date} 00:00` : `${day.date} ${formatTime(i - 1)}`,
           soc_pct: day.soc_curve_pct?.[i] ?? 0,
+          soc_ref: day.reference_soc_curve_pct?.[i] ?? 0,
         }))
       )
     : socData;
@@ -134,6 +139,37 @@ export default function ArbitrageResults() {
   const xTickFormatter = isPeriod
     ? (value: string, index: number) => index % 96 === 0 ? value.split(' ')[0] : ''
     : (value: string) => value;
+
+  // ── New analytics data ──────────────────────────────────────────────────────
+
+  // Einnahmen vs Ausgaben (waterfall-style grouped bar)
+  const chargeOnlyCost = results?.charge_only_cost_eur ?? 0;
+  const v2gSavings = chargeOnlyCost > 0 ? chargeOnlyCost - (results?.total_cost_eur ?? 0) + (results?.total_revenue_eur ?? 0) : 0;
+  const finanzData = [
+    { name: 'Nur-Laden\n(Referenz)', value: chargeOnlyCost, fill: '#94a3b8' },
+    { name: 'Ladekosten\n(V2G)', value: results?.total_cost_eur ?? 0, fill: '#ef4444' },
+    { name: 'V2G-Erlöse', value: results?.total_revenue_eur ?? 0, fill: '#16a34a' },
+    { name: 'Netto-Gewinn', value: results?.net_profit_eur ?? 0, fill: (results?.net_profit_eur ?? 0) >= 0 ? '#2563eb' : '#f59e0b' },
+  ];
+
+  // Arbitrage-Spread: price chart colored by charge/discharge action
+  const spreadData = TIME_LABELS.map((time, i) => ({
+    time,
+    price_ct: (results?.prices_15min?.[i] ?? 0) * 100,
+    charge_kw: results?.schedule_charge_kw?.[i] ?? 0,
+    discharge_kw: results?.schedule_discharge_kw?.[i] ?? 0,
+    action: (results?.schedule_discharge_kw?.[i] ?? 0) > 0.01 ? 'discharge'
+          : (results?.schedule_charge_kw?.[i] ?? 0) > 0.01 ? 'charge'
+          : 'idle',
+  }));
+
+  // Cycles per day (period mode)
+  const cyclesPerDay = isPeriod
+    ? periodDays.map((d: any) => ({ date: d.date, cycles: d.cycles ?? 0 }))
+    : [];
+
+  // Annual projected cycles
+  const annualCycles = results ? results.cycles * 250 : 0;
 
   const handleNewOptimization = () => {
     navigate(pid ? `/projekte/${pid}/wizard` : '/');
@@ -263,23 +299,25 @@ export default function ArbitrageResults() {
           {/* KPI cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
-              label="Netto-Gewinn"
-              value={`${isPeriod ? periodTotals?.net_profit_eur?.toFixed(2) : results!.net_profit_eur.toFixed(2)} €`}
-              sub={isPeriod ? `${periodTotals?.days_count} Tage gesamt` : `am ${latestData?.run_date ?? ''}`}
+              label="V2G Mehrwert"
+              value={`${isPeriod
+                ? (periodTotals ? (periodTotals.charge_only_cost_eur ?? 0) - periodTotals.total_cost_eur + periodTotals.total_revenue_eur : 0).toFixed(2)
+                : v2gSavings.toFixed(2)} €`}
+              sub={v2gSavings >= 0 ? 'Ersparnis vs. Nur-Laden' : 'Mehrkosten vs. Nur-Laden'}
               icon={DollarSign}
-              color="green"
+              color={(!isPeriod && v2gSavings < 0) ? 'amber' : 'green'}
             />
             <KpiCard
-              label="Erlöse (V2G Einspeisung)"
+              label="V2G Erlöse"
               value={`${isPeriod ? periodTotals?.total_revenue_eur?.toFixed(2) : results!.total_revenue_eur.toFixed(2)} €`}
               sub="Einspeisung ins Netz"
               icon={TrendingUp}
               color="blue"
             />
             <KpiCard
-              label="Kosten (Ladung)"
+              label="Gesamtladekosten"
               value={`${isPeriod ? periodTotals?.total_cost_eur?.toFixed(2) : results!.total_cost_eur.toFixed(2)} €`}
-              sub="Bezug aus dem Netz"
+              sub={!isPeriod && chargeOnlyCost > 0 ? `Ohne V2G: ${chargeOnlyCost.toFixed(2)} €` : 'Bezug aus dem Netz'}
               icon={TrendingDown}
               color="amber"
             />
@@ -292,17 +330,33 @@ export default function ArbitrageResults() {
             />
           </div>
 
-          {/* Multi-day overview: daily net profit bar chart */}
+          {/* Erklärungsbox: was bedeuten die Zahlen */}
+          {!isPeriod && results && chargeOnlyCost > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-xs text-blue-800 flex flex-wrap gap-x-8 gap-y-1">
+              <span>📦 <strong>Pflichtladung</strong> (ohne V2G nötig): <strong>{chargeOnlyCost.toFixed(3)} €</strong></span>
+              <span>⚡ <strong>Geladene Energie</strong> (inkl. V2G-Puffer): <strong>{results.total_cost_eur.toFixed(3)} €</strong></span>
+              <span>💰 <strong>V2G-Erlöse</strong>: <strong>+{results.total_revenue_eur.toFixed(3)} €</strong></span>
+              <span className={v2gSavings >= 0 ? 'text-green-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                {v2gSavings >= 0 ? '✅' : '⚠️'} <strong>V2G-Entscheidung</strong>: {v2gSavings >= 0 ? 'spart' : 'kostet extra'} <strong>{Math.abs(v2gSavings).toFixed(3)} € vs. Nur-Laden</strong>
+              </span>
+            </div>
+          )}
+
+          {/* Multi-day overview: daily V2G benefit bar chart */}
           {isPeriod && periodDays.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Netto-Gewinn</h2>
+              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – V2G Mehrwert vs. Nur-Laden</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={periodDays} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} unit=" €" />
-                  <Tooltip formatter={(v: number) => [`${v.toFixed(2)} €`, 'Netto-Gewinn']} />
-                  <Bar dataKey="net_profit_eur" name="Netto-Gewinn" radius={[4, 4, 0, 0]}
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(3)} €`, 'V2G Mehrwert']} />
+                  <ReferenceLine y={0} stroke="#94a3b8" />
+                  <Bar
+                    dataKey={(d: any) => (d.charge_only_cost_eur ?? 0) - d.total_cost_eur + d.total_revenue_eur}
+                    name="V2G Mehrwert"
+                    radius={[4, 4, 0, 0]}
                     fill="#16a34a"
                   />
                 </BarChart>
@@ -359,13 +413,16 @@ export default function ArbitrageResults() {
             </ResponsiveContainer>
           </div>
 
-          {/* Chart 2: Charge / Discharge schedule */}
+          {/* Chart 2: Charge / Discharge schedule + Referenzplan */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-4">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">
               Lade- und Entladeplan [kW]
             </h2>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={isPeriod ? allScheduleData : scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+            <p className="text-xs text-slate-400 mb-4">
+              Gestrichelte Linie = Referenzplan (Sofortladen ohne V2G)
+            </p>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={isPeriod ? allScheduleData : scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
@@ -376,37 +433,25 @@ export default function ArbitrageResults() {
                 <YAxis tick={{ fontSize: 10 }} unit=" kW" />
                 <Tooltip formatter={(v: number, name: string) => [
                   `${v.toFixed(1)} kW`,
-                  name === 'charge_kw' ? 'Ladeleistung' : 'V2G Entladeleistung',
+                  name === 'charge_kw' ? 'V2G Laden' : name === 'discharge_kw' ? 'V2G Entladen' : 'Referenz Laden',
                 ]} />
-                <Legend formatter={(value) =>
-                  value === 'charge_kw' ? 'Ladeleistung [kW]' : 'V2G Entladeleistung [kW]'
+                <Legend formatter={(v) =>
+                  v === 'charge_kw' ? 'V2G Laden [kW]' : v === 'discharge_kw' ? 'V2G Entladen [kW]' : 'Referenz Laden [kW]'
                 } />
-                <Area
-                  type="monotone"
-                  dataKey="charge_kw"
-                  stroke="#2563eb"
-                  fill="#2563eb"
-                  fillOpacity={0.35}
-                  dot={false}
-                  name="charge_kw"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="discharge_kw"
-                  stroke="#ea580c"
-                  fill="#ea580c"
-                  fillOpacity={0.35}
-                  dot={false}
-                  name="discharge_kw"
-                />
+                <Area type="monotone" dataKey="charge_kw" stroke="#2563eb" fill="#2563eb" fillOpacity={0.35} dot={false} name="charge_kw" />
+                <Area type="monotone" dataKey="discharge_kw" stroke="#ea580c" fill="#ea580c" fillOpacity={0.35} dot={false} name="discharge_kw" />
+                <Line type="monotone" dataKey="reference_kw" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 3" dot={false} name="reference_kw" />
                 <Brush dataKey="time" height={20} stroke="#94a3b8" />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Chart 3: SOC curve */}
+          {/* Chart 3: SOC curve — V2G vs Referenz */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-4">SOC-Verlauf [%]</h2>
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">SOC-Verlauf [%]</h2>
+            <p className="text-xs text-slate-400 mb-4">
+              Grün = V2G-optimierter Plan · Gestrichelt grau = Referenzplan (Sofortladen)
+            </p>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={isPeriod ? allSocData : socData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -417,27 +462,158 @@ export default function ArbitrageResults() {
                   interval={isPeriod ? 96 : 3}
                 />
                 <YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
-                <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'SOC']} />
+                <Tooltip formatter={(v: number, name: string) => [
+                  `${v.toFixed(1)}%`,
+                  name === 'soc_pct' ? 'SOC V2G' : 'SOC Referenz',
+                ]} />
+                <Legend formatter={(v) => v === 'soc_pct' ? 'SOC V2G [%]' : 'SOC Referenz [%]'} />
                 {!isPeriod && (
                   <ReferenceLine
                     y={latestData?.results?.soc_curve_pct?.[0] ?? 0}
-                    stroke="#94a3b8"
+                    stroke="#cbd5e1"
                     strokeDasharray="4 2"
                     label={{ value: 'Ankunft-SOC', fontSize: 10, fill: '#94a3b8' }}
                   />
                 )}
-                <Line
-                  type="monotone"
-                  dataKey="soc_pct"
-                  stroke="#16a34a"
-                  strokeWidth={2}
-                  dot={false}
-                  name="soc_pct"
-                />
+                <Line type="monotone" dataKey="soc_ref" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="6 3" dot={false} name="soc_ref" />
+                <Line type="monotone" dataKey="soc_pct" stroke="#16a34a" strokeWidth={2} dot={false} name="soc_pct" />
                 <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </LineChart>
             </ResponsiveContainer>
           </div>
+
+          {/* ── Vergleich: Nur-Laden vs V2G ──────────────────────────────────── */}
+          {!isPeriod && results && chargeOnlyCost > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-purple-600" />
+                  Vergleich: Nur-Laden vs. V2G Arbitrage
+                </h2>
+                {v2gSavings > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                    <TrendingDown className="w-3.5 h-3.5 text-green-600" />
+                    <span className="text-xs font-semibold text-green-700">
+                      V2G-Vorteil: +{v2gSavings.toFixed(3)} € ({chargeOnlyCost > 0 ? ((v2gSavings / chargeOnlyCost) * 100).toFixed(1) : 0} %)
+                    </span>
+                  </div>
+                )}
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={finanzData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }} barSize={50}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} unit=" €" />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(3)} €`]} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} label={{ position: 'top', fontSize: 10, formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(3)} €` }}>
+                    {finanzData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Arbitrage-Spread: Preis gefärbt nach Aktion ──────────────────── */}
+          {!isPeriod && results && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-600" />
+                Arbitrage-Spread: Lade- &amp; Entladezeitpunkte
+              </h2>
+              <p className="text-xs text-slate-400 mb-4">
+                🟦 Laden (günstiger Einkauf) · 🟧 V2G Einspeisung (teurer Verkauf) · Grau = inaktiv
+              </p>
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart data={spreadData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="time" tick={{ fontSize: 10 }} tickFormatter={(v, i) => i % 4 === 0 ? v : ''} interval={3} />
+                  <YAxis yAxisId="price" tick={{ fontSize: 10 }} unit=" ct" />
+                  <YAxis yAxisId="power" orientation="right" tick={{ fontSize: 10 }} unit=" kW" />
+                  <Tooltip formatter={(v: number, name: string) => [
+                    name === 'price_ct' ? `${v.toFixed(2)} ct/kWh` : `${v.toFixed(1)} kW`,
+                    name === 'price_ct' ? 'Strompreis' : name === 'charge_kw' ? 'Laden' : 'V2G',
+                  ]} />
+                  <Legend formatter={(v) => v === 'price_ct' ? 'Preis [ct/kWh]' : v === 'charge_kw' ? 'Laden [kW]' : 'V2G [kW]'} />
+                  <Bar yAxisId="price" dataKey="price_ct" name="price_ct" radius={[2, 2, 0, 0]}>
+                    {spreadData.map((entry, i) => (
+                      <Cell key={i}
+                        fill={entry.action === 'charge' ? '#bfdbfe' : entry.action === 'discharge' ? '#fed7aa' : '#f1f5f9'}
+                        opacity={0.9}
+                      />
+                    ))}
+                  </Bar>
+                  <Line yAxisId="power" type="monotone" dataKey="charge_kw" stroke="#2563eb" strokeWidth={2} dot={false} name="charge_kw" />
+                  <Line yAxisId="power" type="monotone" dataKey="discharge_kw" stroke="#ea580c" strokeWidth={2} dot={false} name="discharge_kw" />
+                  <Brush dataKey="time" height={20} stroke="#94a3b8" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Batterie-Zyklen Analyse ───────────────────────────────────────── */}
+          {!isPeriod && results && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-amber-600" />
+                Batterie-Zyklen &amp; Degradationsindikator
+              </h2>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500">Zyklen heute</p>
+                  <p className="text-xl font-bold text-slate-900">{results.cycles.toFixed(2)}</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500">Proj. Jahreszyklen</p>
+                  <p className={`text-xl font-bold ${annualCycles > 500 ? 'text-red-600' : annualCycles > 300 ? 'text-amber-600' : 'text-green-600'}`}>
+                    {annualCycles.toFixed(0)}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500">Typisches Limit</p>
+                  <p className="text-xl font-bold text-slate-400">500 / Jahr</p>
+                </div>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div
+                  className={`h-3 rounded-full transition-all ${annualCycles > 500 ? 'bg-red-500' : annualCycles > 300 ? 'bg-amber-400' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min(100, (annualCycles / 500) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                {annualCycles <= 300
+                  ? '✅ Zyklenbelastung im unkritischen Bereich.'
+                  : annualCycles <= 500
+                  ? '⚠️ Moderate Zyklenbelastung – Degradation beobachten.'
+                  : '🔴 Hohe Zyklenbelastung – Batterielebensdauer prüfen.'}
+              </p>
+            </div>
+          )}
+
+          {/* ── Tagesübersicht Zyklen (Mehrtages-Modus) ──────────────────────── */}
+          {isPeriod && cyclesPerDay.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-purple-600" />
+                Zyklen je Tag
+              </h2>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={cyclesPerDay} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(v: number) => [`${v.toFixed(2)}`, 'Zyklen']} />
+                  <ReferenceLine y={1} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: '1 Zyklus/Tag', fontSize: 10, fill: '#f59e0b' }} />
+                  <Bar dataKey="cycles" name="Zyklen" radius={[4, 4, 0, 0]}>
+                    {cyclesPerDay.map((_: any, i: number) => (
+                      <Cell key={i} fill="#7c3aed" />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Summary table — single day only */}
           {!isPeriod && results && (
@@ -476,10 +652,19 @@ export default function ArbitrageResults() {
                       +{results.total_revenue_eur.toFixed(3)} €
                     </td>
                   </tr>
+                  {chargeOnlyCost > 0 && (
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-6 py-3 text-slate-600 font-medium">Ladekosten ohne V2G (Referenz)</td>
+                      <td className="px-6 py-3 text-right text-slate-500">−{chargeOnlyCost.toFixed(3)} €</td>
+                    </tr>
+                  )}
                   <tr className="bg-slate-50">
-                    <td className="px-6 py-3 font-semibold text-slate-900">Netto-Gewinn</td>
-                    <td className={`px-6 py-3 text-right font-bold text-lg ${results.net_profit_eur >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                      {results.net_profit_eur >= 0 ? '+' : ''}{results.net_profit_eur.toFixed(3)} €/Tag
+                    <td className="px-6 py-3 font-semibold text-slate-900">
+                      V2G Mehrwert
+                      <span className="ml-2 text-xs font-normal text-slate-500">(vs. Nur-Laden)</span>
+                    </td>
+                    <td className={`px-6 py-3 text-right font-bold text-lg ${v2gSavings >= 0 ? 'text-green-700' : 'text-amber-600'}`}>
+                      {v2gSavings >= 0 ? '+' : ''}{v2gSavings.toFixed(3)} €/Tag
                     </td>
                   </tr>
                 </tbody>

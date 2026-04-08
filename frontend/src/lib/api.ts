@@ -499,7 +499,8 @@ export interface VehicleOptResult {
   vehicle_name: string;
   schedule_kw: number[];
   soc_curve_pct: number[];
-  energy_kwh: number;
+  energy_kwh: number;          // grid energy drawn (incl. charging losses)
+  battery_energy_kwh?: number; // energy stored in battery (= route consumption)
   cost_eur: number;
 }
 
@@ -509,6 +510,8 @@ export interface OptimizationRunResult {
   total_cost_eur: number;
   total_energy_kwh: number;
   fleet_power_kw: number[];
+  naive_fleet_power_kw?: number[];
+  naive_total_cost_eur?: number;
   computation_time_ms: number;
   date: string;
   prices_15min: number[];
@@ -573,9 +576,12 @@ export interface ArbitrageRunResult {
   schedule_discharge_kw: number[];
   net_grid_kw: number[];
   soc_curve_pct: number[];
+  reference_charge_kw?: number[];
+  reference_soc_curve_pct?: number[];
   total_revenue_eur: number;
   total_cost_eur: number;
   net_profit_eur: number;
+  charge_only_cost_eur?: number;
   computation_time_ms: number;
   date: string;
   prices_15min: number[];

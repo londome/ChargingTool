@@ -73,12 +73,13 @@ router.post('/run', async (req: Request, res: Response) => {
         let evName = '';
         let batteryKwh = 60;
         let evMaxChargePower = wallbox_power_kw;
+        let nominalConsumptionKwh100km = 25; // fallback
 
         if (selected_ev_ids && Array.isArray(selected_ev_ids) && selected_ev_ids.length > 0) {
           const evResult = await query<{
-            model: string; battery_usable_kwh: number; max_ac_kw: number;
+            model: string; battery_usable_kwh: number; max_ac_kw: number; nominal_consumption_kwh_100km: number;
           }>(
-            `SELECT model, battery_usable_kwh, max_ac_kw
+            `SELECT model, battery_usable_kwh, max_ac_kw, nominal_consumption_kwh_100km
              FROM ev_models WHERE id = ANY($1::uuid[]) AND is_active = TRUE LIMIT 1`,
             [selected_ev_ids]
           );
@@ -87,6 +88,7 @@ router.post('/run', async (req: Request, res: Response) => {
             evName = ev.model;
             batteryKwh = parseFloat(String(ev.battery_usable_kwh)) || 60;
             evMaxChargePower = parseFloat(String(ev.max_ac_kw)) || wallbox_power_kw;
+            nominalConsumptionKwh100km = parseFloat(String(ev.nominal_consumption_kwh_100km)) || 25;
           }
         }
         const maxChargeKw = Math.min(wallbox_power_kw, evMaxChargePower);
@@ -115,8 +117,8 @@ router.post('/run', async (req: Request, res: Response) => {
             : '17:00');
 
         // ── SOC on arrival from route energy consumption ──────────────────────────
-        // route_results.ev_energy_kwh = ANNUAL energy (× trips_per_year)
-        // Per-trip energy = annual_kwh / trips_per_year → sum across all routes = daily demand
+        // Strategy 1: use route_results from a previous simulation (ev_energy_kwh is annual → /trips_per_year)
+        // Strategy 2 (fallback): compute directly from routes.distance_km × EV nominal consumption
         const routeEnergyResult = await query<{
           ev_energy_kwh: number; trips_per_year: number;
         }>(
@@ -130,10 +132,27 @@ router.post('/run', async (req: Request, res: Response) => {
         );
 
         let dailyEnergyKwh = 0;
-        for (const r of routeEnergyResult.rows) {
-          const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
-          const annualKwh = parseFloat(String(r.ev_energy_kwh)) || 0;
-          dailyEnergyKwh += annualKwh / tripsPerYear;
+        if (routeEnergyResult.rows.length > 0) {
+          // Use simulation results (more accurate)
+          for (const r of routeEnergyResult.rows) {
+            const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
+            const annualKwh = parseFloat(String(r.ev_energy_kwh)) || 0;
+            dailyEnergyKwh += annualKwh / tripsPerYear;
+          }
+        } else {
+          // Fallback: estimate from route distances × EV nominal consumption
+          const routeDistResult = await query<{
+            distance_km: number; trips_per_year: number;
+          }>(
+            `SELECT distance_km, trips_per_year FROM routes WHERE project_id = $1`,
+            [project_id]
+          );
+          for (const r of routeDistResult.rows) {
+            const dist = parseFloat(String(r.distance_km)) || 0;
+            const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
+            // Energy per trip = distance × consumption/100; daily = per trip (1 trip/day assumption)
+            dailyEnergyKwh += (dist * nominalConsumptionKwh100km) / 100;
+          }
         }
 
         const socDropPct = batteryKwh > 0 ? (dailyEnergyKwh / batteryKwh) * 100 : 0;

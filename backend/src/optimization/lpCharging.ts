@@ -32,7 +32,8 @@ export interface VehicleOptResult {
   vehicle_name: string;
   schedule_kw: number[];     // 96 values
   soc_curve_pct: number[];   // 97 values (initial + 96 end-of-interval)
-  energy_kwh: number;
+  energy_kwh: number;        // grid energy drawn (incl. charging losses)
+  battery_energy_kwh: number; // energy stored in battery (= route consumption)
   cost_eur: number;
 }
 
@@ -41,10 +42,42 @@ export interface OptimizationResult {
   vehicles: VehicleOptResult[];
   total_cost_eur: number;
   total_energy_kwh: number;
-  fleet_power_kw: number[];  // 96 values
+  fleet_power_kw: number[];         // 96 values — optimized
+  naive_fleet_power_kw: number[];   // 96 values — immediate (greedy) charging
+  naive_total_cost_eur: number;     // cost if charging immediately on arrival
   computation_time_ms: number;
   date: string;
   prices_15min: number[];
+}
+
+/** Simulate greedy (immediate) charging as baseline for cost comparison. */
+function computeNaiveCharging(
+  vehicles: ChargingVehicle[],
+  prices_15min: number[],
+  gcp_max_kw: number,
+): { naive_total_cost_eur: number; naive_fleet_power_kw: number[] } {
+  const fleetPower = Array(N_INTERVALS).fill(0);
+  let totalCost = 0;
+
+  for (const veh of vehicles) {
+    let soc = veh.soc_arrival_pct;
+    const arr = Math.max(0, Math.min(veh.arrival_interval, N_INTERVALS - 1));
+    const dep = Math.max(1, Math.min(veh.departure_interval, N_INTERVALS));
+
+    for (let t = arr; t < dep; t++) {
+      if (soc >= veh.soc_target_pct) break;
+      const gcpHeadroom = Math.max(0, gcp_max_kw - fleetPower[t]);
+      const socNeeded = veh.soc_target_pct - soc;
+      const gridEnergyNeeded = (socNeeded / 100) * veh.battery_kwh / veh.charging_efficiency;
+      const p = Math.min(veh.max_charge_power_kw, gridEnergyNeeded / DT, gcpHeadroom);
+      if (p > 0.001) {
+        fleetPower[t] += p;
+        soc = Math.min(100, soc + (p * DT * veh.charging_efficiency / veh.battery_kwh) * 100);
+        totalCost += p * DT * prices_15min[t];
+      }
+    }
+  }
+  return { naive_total_cost_eur: totalCost, naive_fleet_power_kw: fleetPower };
 }
 
 const DT = 0.25; // 15 min = 0.25 h
@@ -72,6 +105,8 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
       total_cost_eur: 0,
       total_energy_kwh: 0,
       fleet_power_kw: Array(96).fill(0),
+      naive_fleet_power_kw: Array(96).fill(0),
+      naive_total_cost_eur: 0,
       computation_time_ms: 0,
       date,
       prices_15min,
@@ -153,6 +188,10 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
 
     const result = solver.Solve(model);
 
+    // Naive charging baseline (always computed regardless of feasibility)
+    const { naive_total_cost_eur, naive_fleet_power_kw } =
+      computeNaiveCharging(vehicles, prices_15min, gcp_max_kw);
+
     // Check feasibility
     if (!result.feasible) {
       return {
@@ -161,6 +200,8 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
         total_cost_eur: 0,
         total_energy_kwh: 0,
         fleet_power_kw: Array(96).fill(0),
+        naive_fleet_power_kw,
+        naive_total_cost_eur,
         computation_time_ms: Date.now() - startTime,
         date,
         prices_15min,
@@ -185,7 +226,8 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
         soc_curve_pct.push(socCurrent);
       }
 
-      const energy_kwh = schedule_kw.reduce((sum, p) => sum + p * DT, 0);
+      const energy_kwh = schedule_kw.reduce((sum, p) => sum + p * DT, 0);            // grid energy
+      const battery_energy_kwh = energy_kwh * eta;                                    // stored in battery
       const cost_eur = schedule_kw.reduce((sum, p, t) => sum + p * DT * prices_15min[t], 0);
 
       return {
@@ -194,6 +236,7 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
         schedule_kw,
         soc_curve_pct,
         energy_kwh,
+        battery_energy_kwh,
         cost_eur,
       };
     });
@@ -211,18 +254,24 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
       total_cost_eur,
       total_energy_kwh,
       fleet_power_kw,
+      naive_fleet_power_kw,
+      naive_total_cost_eur,
       computation_time_ms: Date.now() - startTime,
       date,
       prices_15min,
     };
   } catch (err) {
     console.error('LP solver error:', err);
+    const { naive_total_cost_eur, naive_fleet_power_kw } =
+      computeNaiveCharging(vehicles, prices_15min, gcp_max_kw);
     return {
       status: 'error',
       vehicles: [],
       total_cost_eur: 0,
       total_energy_kwh: 0,
       fleet_power_kw: Array(96).fill(0),
+      naive_fleet_power_kw,
+      naive_total_cost_eur,
       computation_time_ms: Date.now() - startTime,
       date,
       prices_15min,
