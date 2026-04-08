@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ComposedChart, AreaChart, LineChart, BarChart,
@@ -6,7 +5,7 @@ import {
   Legend, ResponsiveContainer, ReferenceLine, Brush,
 } from 'recharts';
 import { Zap, Clock, DollarSign, AlertTriangle, Loader2, TrendingDown, LayoutDashboard, Download } from 'lucide-react';
-import { useRunOptimization, useOptimizationLatest, OptimizationRunResult, VehicleOptResult } from '@/lib/api';
+import { useOptimizationLatest, OptimizationRunResult, VehicleOptResult } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 
 const BIDDING_ZONES: Record<string, string> = {
@@ -78,51 +77,8 @@ export default function OptimizationResults() {
   const navigate = useNavigate();
   const { activeProject, wizard } = useProjectStore();
 
-  // Pre-fill from wizard store (Step 3 Depot + Step 4)
-  const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(today);
-  const [biddingZone, setBiddingZone] = useState('DE_LU');
-  const [gcpMaxKw, setGcpMaxKw] = useState(() => wizard.step3Depot.max_grid_connection_kw ?? 100);
-  const [wallboxKw, setWallboxKw] = useState(() => wizard.step4.charging_power_kw ?? 22);
-  const [arrivalTime, setArrivalTime] = useState('17:00');
-  const [departureTime, setDepartureTime] = useState('07:00');
-  const [socTarget, setSocTarget] = useState(() => wizard.step4.soc_target ?? 80);
-  const [socMin, setSocMin] = useState(() => wizard.step4.soc_min ?? 20);
-  const [isRunning, setIsRunning] = useState(false);
-
-  const runOpt = useRunOptimization();
   const pid = projectId || activeProject?.id;
   const latestQuery = useOptimizationLatest(pid);
-
-  // Poll status until completed
-  useEffect(() => {
-    const status = latestQuery.data?.status;
-    if (status === 'completed' || status === 'failed') {
-      setIsRunning(false);
-    }
-  }, [latestQuery.data?.status]);
-
-  const handleRun = async () => {
-    if (!pid) return;
-    setIsRunning(true);
-    try {
-      await runOpt.mutateAsync({
-        project_id: pid,
-        date,
-        bidding_zone: biddingZone,
-        gcp_max_kw: gcpMaxKw,
-        wallbox_power_kw: wallboxKw,
-        soc_target_pct: socTarget,
-        soc_min_pct: socMin,
-        arrival_time: arrivalTime,
-        departure_time: departureTime,
-      });
-      latestQuery.refetch();
-    } catch (e) {
-      console.error('Optimization failed:', e);
-      setIsRunning(false);
-    }
-  };
 
   const latestData = latestQuery.data;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +87,7 @@ export default function OptimizationResults() {
   const results: OptimizationRunResult | null = isPeriod ? null : (rawResults as OptimizationRunResult | null);
   const periodTotals = isPeriod ? rawResults?.totals : null;
   const periodDays: { date: string; total_cost_eur: number; total_energy_kwh: number }[] = isPeriod ? (rawResults?.days ?? []) : [];
-  const isLoading = isRunning || latestData?.status === 'pending' || latestData?.status === 'running';
+  const isLoading = latestData?.status === 'pending' || latestData?.status === 'running';
   const isError = latestData?.status === 'failed';
   const isInfeasible = results?.status === 'infeasible';
   const isOptimal = results?.status === 'optimal' || isPeriod;
@@ -261,122 +217,31 @@ export default function OptimizationResults() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Optimierungsparameter</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Date */}
+      {/* Info row — metadata from the latest run */}
+      {latestData && (
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-3 flex flex-wrap gap-6 text-sm">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Datum</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <span className="text-slate-500">Datum: </span>
+            <span className="font-medium text-slate-900">{latestData.optimization_date ?? '—'}</span>
           </div>
-
-          {/* Bidding zone */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Strommarktzone</label>
-            <select
-              value={biddingZone}
-              onChange={(e) => setBiddingZone(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {Object.entries(BIDDING_ZONES).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+            <span className="text-slate-500">Zone: </span>
+            <span className="font-medium text-slate-900">{latestData.bidding_zone ?? '—'}</span>
           </div>
-
-          {/* GCP max */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Max. Netzanschluss [kW]</label>
-            <input
-              type="number"
-              value={gcpMaxKw}
-              min={1}
-              onChange={(e) => setGcpMaxKw(Number(e.target.value))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <span className="text-slate-500">GCP: </span>
+            <span className="font-medium text-slate-900">{latestData.gcp_max_kw ?? '—'} kW</span>
           </div>
-
-          {/* Wallbox power */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Wallbox-Leistung [kW]</label>
-            <input
-              type="number"
-              value={wallboxKw}
-              min={1}
-              onChange={(e) => setWallboxKw(Number(e.target.value))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Arrival time */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Ankunft Depot</label>
-            <input
-              type="time"
-              value={arrivalTime}
-              onChange={(e) => setArrivalTime(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Departure time (next day) */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Abfahrt (nächster Tag)</label>
-            <input
-              type="time"
-              value={departureTime}
-              onChange={(e) => setDepartureTime(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* SOC target */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">SOC Ziel [%]</label>
-            <input
-              type="number"
-              value={socTarget}
-              min={0}
-              max={100}
-              onChange={(e) => setSocTarget(Number(e.target.value))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* SOC min */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">SOC Minimum [%]</label>
-            <input
-              type="number"
-              value={socMin}
-              min={0}
-              max={100}
-              onChange={(e) => setSocMin(Number(e.target.value))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          {latestData.completed_at && (
+            <div>
+              <span className="text-slate-500">Berechnet: </span>
+              <span className="font-medium text-slate-900">
+                {new Date(latestData.completed_at).toLocaleString('de-DE')}
+              </span>
+            </div>
+          )}
         </div>
-
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={handleRun}
-            disabled={isRunning || !pid}
-            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            {isRunning ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Optimierung läuft...</>
-            ) : (
-              <><Zap className="w-4 h-4" /> Optimierung starten</>
-            )}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Loading */}
       {isLoading && (
