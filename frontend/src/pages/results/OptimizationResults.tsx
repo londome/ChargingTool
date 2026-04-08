@@ -91,6 +91,8 @@ export default function OptimizationResults() {
   const isError = latestData?.status === 'failed';
   const isInfeasible = results?.status === 'infeasible';
   const isOptimal = results?.status === 'optimal' || isPeriod;
+  const socArrivalWarning: string | null = rawResults?.soc_arrival_warning ?? null;
+  const socArrivalPct: number | null = rawResults?.soc_arrival_pct ?? null;
 
   // Build chart data for price + fleet power
   const priceFleetData = TIME_LABELS.map((time, i) => ({
@@ -279,6 +281,22 @@ export default function OptimizationResults() {
             <p className="text-xs text-amber-700 mt-2">
               Erhöhen Sie den Netzanschluss, die Wallbox-Leistung oder senken Sie das SOC-Ziel.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* SOC arrival warning */}
+      {!isLoading && socArrivalWarning && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">SOC-Warnung: Ankunft unter Minimum</p>
+            <p className="text-xs text-amber-700 mt-1">{socArrivalWarning}</p>
+            {socArrivalPct !== null && (
+              <p className="text-xs text-amber-600 mt-1 font-medium">
+                Verwendeter Ankunfts-SOC für die Optimierung: {socArrivalPct.toFixed(1)} %
+              </p>
+            )}
           </div>
         </div>
       )}

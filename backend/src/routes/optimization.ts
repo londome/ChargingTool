@@ -137,10 +137,16 @@ router.post('/run', async (req: Request, res: Response) => {
         }
 
         const socDropPct = batteryKwh > 0 ? (dailyEnergyKwh / batteryKwh) * 100 : 0;
-        const computedSocArrival = Math.max(
-          soc_min_pct,
-          Math.min(soc_target_pct, soc_target_pct - socDropPct)
-        );
+        const rawSocArrival = soc_target_pct - socDropPct;
+        const computedSocArrival = Math.max(0, Math.min(soc_target_pct, rawSocArrival));
+
+        // ── SOC arrival warning ───────────────────────────────────────────────────
+        const socArrivalBelowMin = rawSocArrival < soc_min_pct;
+        const socArrivalWarning = socArrivalBelowMin
+          ? `⚠️ SOC bei Ankunft (${rawSocArrival.toFixed(1)} %) liegt unter dem definierten Minimum (${soc_min_pct} %). ` +
+            `Die Flotte verbraucht ${dailyEnergyKwh.toFixed(1)} kWh/Tag bei einer Batteriekapazität von ${batteryKwh} kWh. ` +
+            `Prüfe ob die Fahrzeugreichweite für die definierten Touren ausreicht.`
+          : null;
 
         // ── Build ChargingVehicle list ────────────────────────────────────────────
         const arrivalInterval = timeToInterval(resolvedArrivalTime);
@@ -207,6 +213,8 @@ router.post('/run', async (req: Request, res: Response) => {
               total_energy_kwh: totalEnergyKwh,
               days_count: periodResult.total_days,
             },
+            soc_arrival_pct: computedSocArrival,
+            soc_arrival_warning: socArrivalWarning,
           };
 
           await query(
@@ -236,7 +244,7 @@ router.post('/run', async (req: Request, res: Response) => {
              WHERE id = $4`,
             [
               optResult.status === 'optimal' ? 'completed' : optResult.status,
-              JSON.stringify(optResult),
+              JSON.stringify({ ...optResult, soc_arrival_pct: computedSocArrival, soc_arrival_warning: socArrivalWarning }),
               JSON.stringify({ prices_15min: pricesResult.prices_15min, source: pricesResult.source }),
               runId,
             ]
