@@ -31,20 +31,20 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sub, icon: Icon, color = 'blue' }: KpiCardProps) {
   const colorMap: Record<string, string> = {
-    blue:   'bg-blue-50 text-blue-600',
-    green:  'bg-green-50 text-green-600',
-    amber:  'bg-amber-50 text-amber-600',
+    blue:   'bg-[#e6f3fc] text-[#0079C0]',
+    green:  'bg-[#e8f5f0] text-[#043F2E]',
+    amber:  'bg-amber-50 text-[#C45600]',
     red:    'bg-red-50 text-red-600',
     purple: 'bg-purple-50 text-purple-600',
   };
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
-      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${colorMap[color]}`}>
+    <div className="bg-white rounded border border-slate-200 p-5 flex items-start gap-4">
+      <div className={`flex items-center justify-center w-10 h-10 rounded shrink-0 ${colorMap[color]}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
         <p className="text-xs text-slate-500 font-medium">{label}</p>
-        <p className="text-xl font-bold text-slate-900 leading-tight">{value}</p>
+        <p className="text-xl font-bold text-[#001141] leading-tight">{value}</p>
         {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -180,7 +180,7 @@ export default function ArbitrageResults() {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Energiearbitrage (V2G)</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Energiearbitrage (V2G)</h1>
           <p className="text-sm text-slate-500 mt-1">
             Bidirektionale Ladeoptimierung der EV-Flotte mit ENTSO-E Day-Ahead Preisen
           </p>
@@ -215,7 +215,7 @@ export default function ArbitrageResults() {
           </button>
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0079C0] rounded hover:bg-[#005fa3]"
           >
             <LayoutDashboard className="w-4 h-4" /> Fertig
           </button>
@@ -224,18 +224,18 @@ export default function ArbitrageResults() {
 
       {/* Info row */}
       {latestData && (
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-3 flex flex-wrap gap-6 text-sm">
+        <div className="bg-white rounded border border-slate-200 px-5 py-3 flex flex-wrap gap-6 text-sm">
           <div>
             <span className="text-slate-500">Datum: </span>
-            <span className="font-medium text-slate-900">{latestData.run_date ?? '—'}</span>
+            <span className="font-medium text-[#001141]">{latestData.run_date ?? '—'}</span>
           </div>
           <div>
             <span className="text-slate-500">Marktzone: </span>
-            <span className="font-medium text-slate-900">{latestData.bidding_zone ?? '—'}</span>
+            <span className="font-medium text-[#001141]">{latestData.bidding_zone ?? '—'}</span>
           </div>
           <div>
             <span className="text-slate-500">Netzanschluss: </span>
-            <span className="font-medium text-slate-900">{latestData.gcp_max_kw ?? '—'} kW</span>
+            <span className="font-medium text-[#001141]">{latestData.gcp_max_kw ?? '—'} kW</span>
           </div>
           {latestData.completed_at && (
             <div>
@@ -250,7 +250,7 @@ export default function ArbitrageResults() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="bg-white rounded-xl border border-slate-200 p-14 flex flex-col items-center gap-4">
+        <div className="bg-white rounded border border-slate-200 p-14 flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-purple-600 animate-spin" />
           <p className="text-sm text-slate-700 font-medium">MILP-Optimierung läuft...</p>
           <p className="text-xs text-slate-400 text-center max-w-sm">
@@ -262,7 +262,7 @@ export default function ArbitrageResults() {
 
       {/* Error */}
       {!isLoading && isError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4">
+        <div className="bg-red-50 border border-red-200 rounded p-6 flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-red-800">Arbitrage-Berechnung fehlgeschlagen</p>
@@ -276,7 +276,7 @@ export default function ArbitrageResults() {
 
       {/* Infeasible */}
       {!isLoading && !isError && isInfeasible && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
+        <div className="bg-amber-50 border border-amber-200 rounded p-6 flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">Keine machbare Lösung (Infeasible)</p>
@@ -332,11 +332,11 @@ export default function ArbitrageResults() {
 
           {/* Erklärungsbox: was bedeuten die Zahlen */}
           {!isPeriod && results && chargeOnlyCost > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-xs text-blue-800 flex flex-wrap gap-x-8 gap-y-1">
+            <div className="bg-[#e6f3fc] border border-[#0079C0]/20 rounded px-5 py-3 text-xs text-[#001141] flex flex-wrap gap-x-8 gap-y-1">
               <span>📦 <strong>Pflichtladung</strong> (ohne V2G nötig): <strong>{chargeOnlyCost.toFixed(3)} €</strong></span>
               <span>⚡ <strong>Geladene Energie</strong> (inkl. V2G-Puffer): <strong>{results.total_cost_eur.toFixed(3)} €</strong></span>
               <span>💰 <strong>V2G-Erlöse</strong>: <strong>+{results.total_revenue_eur.toFixed(3)} €</strong></span>
-              <span className={v2gSavings >= 0 ? 'text-green-700 font-semibold' : 'text-amber-700 font-semibold'}>
+              <span className={v2gSavings >= 0 ? 'text-[#043F2E] font-semibold' : 'text-[#C45600] font-semibold'}>
                 {v2gSavings >= 0 ? '✅' : '⚠️'} <strong>V2G-Entscheidung</strong>: {v2gSavings >= 0 ? 'spart' : 'kostet extra'} <strong>{Math.abs(v2gSavings).toFixed(3)} € vs. Nur-Laden</strong>
               </span>
             </div>
@@ -344,8 +344,8 @@ export default function ArbitrageResults() {
 
           {/* Multi-day overview: daily V2G benefit bar chart */}
           {isPeriod && periodDays.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – V2G Mehrwert vs. Nur-Laden</h2>
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4">Tagesübersicht – V2G Mehrwert vs. Nur-Laden</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={periodDays} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -365,8 +365,8 @@ export default function ArbitrageResults() {
           )}
 
           {/* Chart 1: Price + Net grid power — shown in both single-day and period mode */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-4">
+          <div className="bg-white rounded border border-slate-200 p-6">
+            <h2 className="text-sm font-normal text-[#001141] mb-4">
               Strompreise &amp; Netzleistung (+ Bezug / − V2G Einspeisung)
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -414,8 +414,8 @@ export default function ArbitrageResults() {
           </div>
 
           {/* Chart 2: Charge / Discharge schedule + Referenzplan */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-1">
+          <div className="bg-white rounded border border-slate-200 p-6">
+            <h2 className="text-sm font-normal text-[#001141] mb-1">
               Lade- und Entladeplan [kW]
             </h2>
             <p className="text-xs text-slate-400 mb-4">
@@ -447,8 +447,8 @@ export default function ArbitrageResults() {
           </div>
 
           {/* Chart 3: SOC curve — V2G vs Referenz */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-1">SOC-Verlauf [%]</h2>
+          <div className="bg-white rounded border border-slate-200 p-6">
+            <h2 className="text-sm font-normal text-[#001141] mb-1">SOC-Verlauf [%]</h2>
             <p className="text-xs text-slate-400 mb-4">
               Grün = V2G-optimierter Plan · Gestrichelt grau = Referenzplan (Sofortladen)
             </p>
@@ -484,16 +484,16 @@ export default function ArbitrageResults() {
 
           {/* ── Vergleich: Nur-Laden vs V2G ──────────────────────────────────── */}
           {!isPeriod && results && chargeOnlyCost > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="bg-white rounded border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <h2 className="text-sm font-normal text-[#001141] flex items-center gap-2">
                   <TrendingDown className="w-4 h-4 text-purple-600" />
                   Vergleich: Nur-Laden vs. V2G Arbitrage
                 </h2>
                 {v2gSavings > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                    <TrendingDown className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-xs font-semibold text-green-700">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#e8f5f0] border border-[#043F2E]/20 rounded">
+                    <TrendingDown className="w-3.5 h-3.5 text-[#043F2E]" />
+                    <span className="text-xs font-semibold text-[#043F2E]">
                       V2G-Vorteil: +{v2gSavings.toFixed(3)} € ({chargeOnlyCost > 0 ? ((v2gSavings / chargeOnlyCost) * 100).toFixed(1) : 0} %)
                     </span>
                   </div>
@@ -517,8 +517,8 @@ export default function ArbitrageResults() {
 
           {/* ── Arbitrage-Spread: Preis gefärbt nach Aktion ──────────────────── */}
           {!isPeriod && results && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-1 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-purple-600" />
                 Arbitrage-Spread: Lade- &amp; Entladezeitpunkte
               </h2>
@@ -554,19 +554,19 @@ export default function ArbitrageResults() {
 
           {/* ── Batterie-Zyklen Analyse ───────────────────────────────────────── */}
           {!isPeriod && results && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-amber-600" />
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-[#C45600]" />
                 Batterie-Zyklen &amp; Degradationsindikator
               </h2>
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500">Zyklen heute</p>
-                  <p className="text-xl font-bold text-slate-900">{results.cycles.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-[#001141]">{results.cycles.toFixed(2)}</p>
                 </div>
                 <div className="text-center p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500">Proj. Jahreszyklen</p>
-                  <p className={`text-xl font-bold ${annualCycles > 500 ? 'text-red-600' : annualCycles > 300 ? 'text-amber-600' : 'text-green-600'}`}>
+                  <p className={`text-xl font-bold ${annualCycles > 500 ? 'text-red-600' : annualCycles > 300 ? 'text-[#C45600]' : 'text-[#043F2E]'}`}>
                     {annualCycles.toFixed(0)}
                   </p>
                 </div>
@@ -593,8 +593,8 @@ export default function ArbitrageResults() {
 
           {/* ── Tagesübersicht Zyklen (Mehrtages-Modus) ──────────────────────── */}
           {isPeriod && cyclesPerDay.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4 flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-purple-600" />
                 Zyklen je Tag
               </h2>
@@ -617,9 +617,9 @@ export default function ArbitrageResults() {
 
           {/* Summary table — single day only */}
           {!isPeriod && results && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-700">Ergebniszusammenfassung</h2>
+              <h2 className="text-sm font-normal text-[#001141]">Ergebniszusammenfassung</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -648,7 +648,7 @@ export default function ArbitrageResults() {
                   </tr>
                   <tr className="hover:bg-slate-50">
                     <td className="px-6 py-3 text-slate-600 font-medium">V2G Einspeisung-Erlöse</td>
-                    <td className="px-6 py-3 text-right text-green-700 font-medium">
+                    <td className="px-6 py-3 text-right text-[#043F2E] font-medium">
                       +{results.total_revenue_eur.toFixed(3)} €
                     </td>
                   </tr>
@@ -659,11 +659,11 @@ export default function ArbitrageResults() {
                     </tr>
                   )}
                   <tr className="bg-slate-50">
-                    <td className="px-6 py-3 font-semibold text-slate-900">
+                    <td className="px-6 py-3 font-semibold text-[#001141]">
                       V2G Mehrwert
                       <span className="ml-2 text-xs font-normal text-slate-500">(vs. Nur-Laden)</span>
                     </td>
-                    <td className={`px-6 py-3 text-right font-bold text-lg ${v2gSavings >= 0 ? 'text-green-700' : 'text-amber-600'}`}>
+                    <td className={`px-6 py-3 text-right font-bold text-lg ${v2gSavings >= 0 ? 'text-[#043F2E]' : 'text-[#C45600]'}`}>
                       {v2gSavings >= 0 ? '+' : ''}{v2gSavings.toFixed(3)} €/Tag
                     </td>
                   </tr>
@@ -677,12 +677,12 @@ export default function ArbitrageResults() {
 
       {/* Empty state — no run exists yet */}
       {!isLoading && !isError && !latestData && (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 flex flex-col items-center gap-4 text-center">
+        <div className="bg-white rounded border border-slate-200 p-12 flex flex-col items-center gap-4 text-center">
           <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center">
             <Battery className="w-7 h-7 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">Noch keine Arbitrage-Berechnung vorhanden</p>
+            <p className="text-sm font-normal text-[#001141]">Noch keine Arbitrage-Berechnung vorhanden</p>
             <p className="text-xs text-slate-400 mt-1">
               Starten Sie eine Optimierung über den Wizard (Schritt 4).
             </p>

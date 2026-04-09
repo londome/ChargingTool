@@ -385,7 +385,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Mobilität & Fahrzeuge</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Mobilität & Fahrzeuge</h2>
         <p className="text-sm text-slate-500 mt-1">
           Erfassen Sie Tourdaten und Fahrzeugkonfiguration in einem Schritt.
         </p>
@@ -442,7 +442,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
             {/* Vehicle types section */}
             <div className="border rounded-lg p-4 bg-slate-50 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <h4 className="text-sm font-normal text-[#001141] flex items-center gap-2">
                   <Truck className="h-4 w-4" /> Fahrzeugtypen
                 </h4>
                 <Button variant="outline" size="sm" onClick={addVehicleType} className="h-7 text-xs gap-1">
@@ -453,7 +453,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                 {vehicleTypes.map((vt, vi) => (
                   <div key={vi} className="bg-white border rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-blue-700">Fahrzeugtyp {vi + 1}</span>
+                      <span className="text-xs font-normal text-[#0079C0]">Fahrzeugtyp {vi + 1}</span>
                       {vehicleTypes.length > 1 && (
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => removeVehicleType(vi)}>
                           <Trash2 className="h-3 w-3 text-red-400" />
@@ -508,9 +508,9 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
 
             {/* Tours section */}
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700">Touren</h4>
+              <h4 className="text-sm font-normal text-[#001141]">Touren</h4>
               {isReichweitenMode && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-700">
+                <div className="flex items-start gap-2 px-3 py-2 bg-[#e6f3fc] rounded border border-[#0079C0]/20 text-xs text-[#0079C0]">
                   <span className="shrink-0 mt-0.5">ℹ️</span>
                   <span>
                     <strong>Distanz (km)</strong> = Strecke pro einzelner Fahrt.
@@ -598,7 +598,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <button
                         type="button"
                         onClick={() => toggleConditions(ri)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-medium text-[#0079C0] hover:text-[#005fa3] transition-colors"
                       >
                         <Thermometer className="h-3.5 w-3.5" />
                         Fahrbedingungen
@@ -615,7 +615,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       </button>
 
                       {expandedConditions.has(ri) && (
-                        <div className="mt-3 space-y-3 bg-blue-50/50 rounded-lg p-3 border border-blue-100">
+                        <div className="mt-3 space-y-3 bg-[#e6f3fc]/50 rounded p-3 border border-[#0079C0]/20">
                           {/* Temperature */}
                           <div className="flex items-center gap-3">
                             <Label className="text-xs text-slate-600 flex items-center gap-1 w-28 shrink-0">
@@ -629,8 +629,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                             />
                             <span className={cn(
                               'text-xs font-bold tabular-nums w-14 text-right',
-                              route.sim_temperature_c < 0 ? 'text-blue-600' :
-                              route.sim_temperature_c > 28 ? 'text-orange-600' : 'text-slate-700'
+                              route.sim_temperature_c < 0 ? 'text-[#0079C0]' :
+                              route.sim_temperature_c > 28 ? 'text-[#C45600]' : 'text-slate-700'
                             )}>
                               {route.sim_temperature_c > 0 ? '+' : ''}{route.sim_temperature_c}°C
                             </span>
@@ -650,8 +650,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                                   className={cn(
                                     'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
                                     route.sim_hvac_on === val
-                                      ? 'bg-blue-600 text-white border-blue-600'
-                                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                                      ? 'bg-[#0079C0] text-white border-[#0079C0]'
+                                      : 'bg-white text-slate-600 border-slate-200 hover:border-[#0079C0]'
                                   )}
                                 >
                                   {val ? '🌡️ Ein' : '⬜ Aus'}
@@ -730,7 +730,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
               {fleetEntries.map((entry, i) => (
                 <div key={i} className="border rounded-lg p-3 bg-slate-50">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-slate-700">
+                    <span className="text-sm font-normal text-[#001141]">
                       Fahrzeugtyp {i + 1}
                     </span>
                     {fleetEntries.length > 1 && (
@@ -812,7 +812,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                         </p>
                       )}
                       {isReichweitenMode && entry.trips_per_year > 0 && (
-                        <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
+                        <p className="text-xs font-normal text-[#0079C0] flex items-center gap-1">
                           🚗 Tour-Distanz: {Math.round(entry.annual_km / entry.trips_per_year)} km/Fahrt
                         </p>
                       )}

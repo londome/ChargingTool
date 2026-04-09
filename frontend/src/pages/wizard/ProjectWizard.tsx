@@ -117,23 +117,23 @@ export default function ProjectWizard() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-light text-[#001141]">
           {projectId ? 'Projekt bearbeiten' : 'Neues Projekt erstellen'}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
           Schritt {currentStep} von {STEPS.length} – {currentLabel}
           {wizard.wizardModule === 'reichweiten' && (
-            <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+            <span className="ml-2 text-xs bg-[#e6f3fc] text-[#0079C0] px-2 py-0.5 rounded-full font-medium">
               Reichweiten Simulator
             </span>
           )}
           {wizard.wizardModule === 'ladeprozess' && (
-            <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+            <span className="ml-2 text-xs bg-[#e6f3fc] text-[#0079C0] px-2 py-0.5 rounded-full font-medium">
               Ladeprozess Simulator
             </span>
           )}
           {wizard.wizardModule === 'ladeprozess_optimierung' && (
-            <span className="ml-2 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="ml-2 text-xs bg-[#e8f5f0] text-[#043F2E] px-2 py-0.5 rounded-full font-medium">
               Ladeprozess Optimierung
             </span>
           )}
@@ -154,8 +154,8 @@ export default function ProjectWizard() {
               disabled={step.number > currentStep}
               className={cn(
                 'flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-colors shrink-0',
-                step.number < currentStep  ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700'
-                : step.number === currentStep ? 'bg-blue-600 text-white ring-4 ring-blue-100'
+                step.number < currentStep  ? 'bg-[#0079C0] text-white cursor-pointer hover:bg-[#005fa3]'
+                : step.number === currentStep ? 'bg-[#0079C0] text-white ring-4 ring-[#cce6f8]'
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
               )}
               title={step.label}
@@ -165,14 +165,14 @@ export default function ProjectWizard() {
             <div className="flex flex-col ml-2 mr-2 flex-1 min-w-0">
               <span className={cn(
                 'text-xs font-medium truncate hidden sm:block',
-                step.number === currentStep ? 'text-blue-600' : 'text-slate-400'
+                step.number === currentStep ? 'text-[#0079C0]' : 'text-slate-400'
               )}>
                 {step.label}
               </span>
               {index < STEPS.length - 1 && (
                 <div className={cn(
                   'h-0.5 mt-1 rounded-full hidden sm:block',
-                  step.number < currentStep ? 'bg-blue-600' : 'bg-slate-200'
+                  step.number < currentStep ? 'bg-[#0079C0]' : 'bg-slate-200'
                 )} />
               )}
             </div>
@@ -187,7 +187,7 @@ export default function ProjectWizard() {
       </div>
 
       {/* Step content */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white rounded border border-slate-200 shadow-sm">
         {currentStep === 1 && <Step1ProjectContext />}
 
         {currentStep === 2 && (

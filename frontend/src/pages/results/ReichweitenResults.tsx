@@ -13,8 +13,8 @@ import KPICard from '@/components/shared/KPICard';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function socColor(soc: number, socMin: number) {
-  if (soc >= socMin + 20) return 'text-green-700';
-  if (soc >= socMin) return 'text-amber-600';
+  if (soc >= socMin + 20) return 'text-[#043F2E]';
+  if (soc >= socMin) return 'text-[#C45600]';
   return 'text-red-600';
 }
 
@@ -26,15 +26,15 @@ function feasibilityBarColor(pct: number) {
 }
 
 function feasibilityTextColor(pct: number) {
-  if (pct === 100) return 'text-green-700';
-  if (pct >= 75) return 'text-emerald-600';
-  if (pct >= 50) return 'text-amber-600';
+  if (pct === 100) return 'text-[#043F2E]';
+  if (pct >= 75) return 'text-[#043F2E]';
+  if (pct >= 50) return 'text-[#C45600]';
   return 'text-red-600';
 }
 
 function FeasibilityBadge({ status }: { status: string }) {
   return status === 'feasible' ? (
-    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-[#043F2E]/20">
       <CheckCircle2 className="h-3 w-3" /> Machbar
     </span>
   ) : (
@@ -62,14 +62,14 @@ function EVPanel({
 
   return (
     <div className={cn(
-      'border rounded-xl overflow-hidden transition-shadow',
-      highlight ? 'border-blue-400 shadow-md' : 'border-slate-200',
+      'border rounded overflow-hidden transition-shadow',
+      highlight ? 'border-[#0079C0] shadow-md' : 'border-slate-200',
     )}>
       {/* Header */}
       <button
         className={cn(
           'w-full flex items-center justify-between p-4 transition-colors',
-          highlight ? 'bg-blue-50 hover:bg-blue-100' : 'bg-white hover:bg-slate-50'
+          highlight ? 'bg-[#e6f3fc] hover:bg-[#d0eaf8]' : 'bg-white hover:bg-slate-50'
         )}
         onClick={() => setExpanded(v => !v)}
       >
@@ -96,7 +96,7 @@ function EVPanel({
 
           <div className="text-left">
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-slate-900 text-sm">{ev.ev_model_name}</p>
+              <p className="font-normal text-[#001141] text-sm">{ev.ev_model_name}</p>
               {pct === 100 && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
                   100% ✓
@@ -195,20 +195,20 @@ function SectionHeader({
 }) {
   return (
     <div className={cn(
-      'flex items-start gap-3 px-4 py-3 rounded-xl border',
-      accent === 'blue' ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'
+      'flex items-start gap-3 px-4 py-3 rounded border',
+      accent === 'blue' ? 'bg-[#e6f3fc] border-[#0079C0]/30' : 'bg-amber-50 border-amber-200'
     )}>
       <div className={cn(
         'mt-0.5 shrink-0',
-        accent === 'blue' ? 'text-blue-600' : 'text-amber-600'
+        accent === 'blue' ? 'text-[#0079C0]' : 'text-[#C45600]'
       )}>
         {icon}
       </div>
       <div>
-        <p className={cn('font-semibold text-sm', accent === 'blue' ? 'text-blue-900' : 'text-amber-900')}>
+        <p className={cn('font-normal text-sm', accent === 'blue' ? 'text-[#001141]' : 'text-[#001141]')}>
           {title}
         </p>
-        <p className={cn('text-xs mt-0.5', accent === 'blue' ? 'text-blue-700' : 'text-amber-700')}>
+        <p className={cn('text-xs mt-0.5', accent === 'blue' ? 'text-[#0079C0]' : 'text-[#C45600]')}>
           {subtitle}
         </p>
       </div>
@@ -230,9 +230,9 @@ export default function ReichweitenResults() {
       <div className="space-y-4 animate-fade-in">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded" />)}
         </div>
-        {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded" />)}
       </div>
     );
   }
@@ -241,7 +241,7 @@ export default function ReichweitenResults() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertTriangle className="h-10 w-10 text-amber-400 mb-3" />
-        <h2 className="text-lg font-semibold text-slate-700">Keine Ergebnisse</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Keine Ergebnisse</h2>
         <p className="text-sm text-slate-400 mt-1">
           {data?.status === 'failed'
             ? 'Die Simulation ist fehlgeschlagen. Bitte versuche es erneut.'
@@ -254,8 +254,8 @@ export default function ReichweitenResults() {
   if (data.status === 'pending' || data.status === 'running') {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mb-3" />
-        <h2 className="text-lg font-semibold text-slate-700">Analyse läuft...</h2>
+        <div className="h-10 w-10 rounded-full border-4 border-[#e6f3fc] border-t-[#0079C0] animate-spin mb-3" />
+        <h2 className="text-lg font-normal text-[#001141]">Analyse läuft...</h2>
         <p className="text-sm text-slate-400 mt-1">Die Reichweitenanalyse wird durchgeführt.</p>
       </div>
     );
@@ -284,7 +284,7 @@ export default function ReichweitenResults() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Reichweiten Analyse</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Reichweiten Analyse</h1>
           <p className="text-sm text-slate-500 mt-1">
             Machbarkeitsbewertung der Elektrifizierung ·{' '}
             SOC Start: {soc_start}% → Reserve: {soc_min}%
@@ -300,9 +300,9 @@ export default function ReichweitenResults() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-xl border border-blue-100">
-        <Info className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-        <p className="text-xs text-blue-700">
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
+        <Info className="h-3.5 w-3.5 text-[#0079C0] shrink-0" />
+        <p className="text-xs text-[#001141]">
           Fahrbedingungen (Temperatur, HVAC, Nutzungsmix) wurden pro Tour individuell definiert.
         </p>
       </div>
@@ -377,8 +377,8 @@ export default function ReichweitenResults() {
                   className={cn(
                     'text-xs px-2.5 py-1 rounded-full border transition-colors',
                     segmentFilter === seg
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                      ? 'bg-[#0079C0] text-white border-[#0079C0]'
+                      : 'border-slate-200 text-slate-600 hover:border-[#0079C0]/50'
                   )}
                 >
                   {seg === 'all' ? 'Alle' : seg.replace(/_/g, ' ')}
@@ -402,7 +402,7 @@ export default function ReichweitenResults() {
       )}
 
       {/* Info note */}
-      <div className="flex items-start gap-2 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="flex items-start gap-2 px-4 py-3 bg-slate-50 rounded border border-slate-200">
         <Info className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
         <p className="text-xs text-slate-500">
           Die Analyse berücksichtigt Nutzlast, Durchschnittsgeschwindigkeit und Streckenprofil.

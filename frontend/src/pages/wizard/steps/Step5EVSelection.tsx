@@ -42,7 +42,7 @@ export default function Step5EVSelection() {
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">EV-Modell-Auswahl</h2>
+        <h2 className="text-lg font-normal text-[#001141]">EV-Modell-Auswahl</h2>
         <p className="text-sm text-slate-500 mt-1">
           Wählen Sie EV-Modelle für den Vergleich aus. Die Simulation findet automatisch die besten Matches.
         </p>
@@ -51,8 +51,8 @@ export default function Step5EVSelection() {
       <div className="p-6 space-y-4">
         {/* Recommended segments */}
         {fleetSegments.length > 0 && (
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-xs font-semibold text-blue-800 mb-1">Empfohlene Segmente für Ihre Flotte:</p>
+          <div className="p-3 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
+            <p className="text-xs font-normal text-[#001141] mb-1">Empfohlene Segmente für Ihre Flotte:</p>
             <div className="flex flex-wrap gap-1">
               {fleetSegments.map(s => (
                 <Badge key={s} variant="info" className="cursor-pointer text-xs" onClick={() => setFilterSegment(s)}>
@@ -104,14 +104,14 @@ export default function Step5EVSelection() {
                 <div
                   key={ev.id}
                   onClick={() => toggleEV(ev.id)}
-                  className={`relative cursor-pointer rounded-lg border p-3 transition-all ${
+                  className={`relative cursor-pointer rounded border p-3 transition-all ${
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 shadow-sm'
+                      ? 'border-[#0079C0] bg-[#e6f3fc] shadow-sm'
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#0079C0] flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
                     </div>
                   )}
@@ -120,7 +120,7 @@ export default function Step5EVSelection() {
                       <Zap className="h-3.5 w-3.5 text-slate-600" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-900 text-sm">{ev.manufacturer} {ev.model}</p>
+                      <p className="font-normal text-[#001141] text-sm">{ev.manufacturer} {ev.model}</p>
                       <p className="text-xs text-slate-500">{getSegmentLabel(ev.segment as VehicleSegment)}</p>
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="flex items-center gap-0.5 text-xs text-slate-600">
@@ -134,7 +134,7 @@ export default function Step5EVSelection() {
                         </span>
                       </div>
                       {ev.purchase_price && (
-                        <p className="text-xs text-blue-700 font-medium mt-0.5">
+                        <p className="text-xs text-[#0079C0] font-medium mt-0.5">
                           ab {formatCurrency(ev.purchase_price)}
                         </p>
                       )}

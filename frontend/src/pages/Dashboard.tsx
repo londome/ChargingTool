@@ -38,7 +38,7 @@ export default function Dashboard() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">
             Übersicht Ihrer Flottenelektrifizierungs-Analysen
           </p>
@@ -87,16 +87,16 @@ export default function Dashboard() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
-          className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+          className="cursor-pointer hover:border-[#0079C0] hover:shadow-md transition-all group"
           onClick={() => navigate('/projekte/neu')}
         >
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0] group-hover:bg-[#cce6f8] transition-colors">
                 <Plus className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Analyse starten</h3>
+                <h3 className="font-normal text-[#001141]">Analyse starten</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
                   Neues Projekt mit dem Wizard einrichten
                 </p>
@@ -106,16 +106,16 @@ export default function Dashboard() {
         </Card>
 
         <Card
-          className="cursor-pointer hover:border-green-300 hover:shadow-md transition-all group"
+          className="cursor-pointer hover:border-[#043F2E] hover:shadow-md transition-all group"
           onClick={() => navigate('/fahrzeuge')}
         >
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-green-50 text-green-600 group-hover:bg-green-100 transition-colors">
+              <div className="p-2 rounded bg-[#e8f5f0] text-[#043F2E] group-hover:bg-[#d0ebdf] transition-colors">
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">EV-Modelle erkunden</h3>
+                <h3 className="font-normal text-[#001141]">EV-Modelle erkunden</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
                   Bibliothek mit 17 aktuellen Fahrzeugmodellen
                 </p>
@@ -131,7 +131,7 @@ export default function Dashboard() {
                 <BarChart3 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Berichte</h3>
+                <h3 className="font-normal text-[#001141]">Berichte</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
                   Exportieren Sie Analysen als XLSX oder CSV
                 </p>
@@ -143,7 +143,7 @@ export default function Dashboard() {
 
       {/* Recent Projects */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-800 mb-3">Aktuelle Projekte</h2>
+        <h2 className="text-lg font-normal text-[#001141] mb-3">Aktuelle Projekte</h2>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -172,24 +172,24 @@ export default function Dashboard() {
                 <CardContent className="py-4 px-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-10 h-10 rounded bg-gradient-to-br from-[#0079C0] to-[#001141] flex items-center justify-center text-white font-bold text-sm">
                         {project.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-slate-900">{project.name}</h3>
+                          <h3 className="font-normal text-[#001141]">{project.name}</h3>
                           {project.wizard_module === 'reichweiten' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-green-200">
                               Reichweiten Simulator
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-blue-200">
                               Ladeprozess Simulator
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess_optimierung' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-emerald-200">
                               Ladeoptimierung
                             </span>
                           )}
@@ -234,13 +234,13 @@ export default function Dashboard() {
       </div>
 
       {/* Info banner */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-[#0079C0] bg-[#e6f3fc]">
         <CardContent className="py-4 px-5">
           <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <Zap className="h-5 w-5 text-[#0079C0] mt-0.5 shrink-0" />
             <div>
-              <h4 className="font-semibold text-blue-900 text-sm">Flottenelektrifizierung – Schritt für Schritt</h4>
-              <p className="text-blue-700 text-sm mt-0.5">
+              <h4 className="font-normal text-[#001141] text-sm">Flottenelektrifizierung – Schritt für Schritt</h4>
+              <p className="text-[#0079C0] text-sm mt-0.5">
                 Erstellen Sie ein Projekt, erfassen Sie Ihre Flottenfahrzeuge, laden Sie Tourdaten hoch,
                 konfigurieren Sie Szenarien und starten Sie die Simulation für vollständige TCO- und CO₂-Analysen.
               </p>

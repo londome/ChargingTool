@@ -23,10 +23,10 @@ function TempSlider({
   onChange: (v: number) => void;
 }) {
   const color =
-    value < 0   ? 'text-blue-600' :
+    value < 0   ? 'text-[#0079C0]' :
     value < 10  ? 'text-cyan-600' :
     value < 20  ? 'text-slate-600' :
-    value < 30  ? 'text-orange-500' : 'text-red-600';
+    value < 30  ? 'text-[#C45600]' : 'text-red-600';
 
   return (
     <div className="space-y-2">
@@ -93,7 +93,7 @@ function UsageMixSliders({
         </label>
         <span className={cn(
           'text-xs font-semibold px-2 py-0.5 rounded-full',
-          valid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+          valid ? 'bg-[#e8f5f0] text-[#043F2E]' : 'bg-red-50 text-red-600'
         )}>
           {sum}% {valid ? '✓' : '≠ 100%'}
         </span>
@@ -143,9 +143,9 @@ function UsageMixSliders({
 
       {/* Visual bar */}
       <div className="h-3 rounded-full overflow-hidden flex">
-        <div className="bg-blue-500 transition-all" style={{ width: `${Math.round(city * 100)}%` }} />
-        <div className="bg-green-500 transition-all" style={{ width: `${Math.round(rural * 100)}%` }} />
-        <div className="bg-orange-400 transition-all" style={{ width: `${Math.round(hwy * 100)}%` }} />
+        <div className="bg-[#0079C0] transition-all" style={{ width: `${Math.round(city * 100)}%` }} />
+        <div className="bg-[#043F2E] transition-all" style={{ width: `${Math.round(rural * 100)}%` }} />
+        <div className="bg-[#C45600] transition-all" style={{ width: `${Math.round(hwy * 100)}%` }} />
       </div>
     </div>
   );
@@ -182,15 +182,15 @@ export default function Step4ReichweitenParams({ onFinish, isFinishing }: Step4R
   const mix_factor = 1.0 + (hwy_share * 0.12) - (city_share * 0.05); // highway uses more, city less
   const condition_factor = f_T * hvac_factor * mix_factor;
   const conditionLabel =
-    condition_factor < 1.05 ? { text: 'Optimale Bedingungen', color: 'text-green-700' } :
-    condition_factor < 1.15 ? { text: 'Moderate Bedingungen', color: 'text-amber-600' } :
-    condition_factor < 1.30 ? { text: 'Ungünstige Bedingungen', color: 'text-orange-600' } :
+    condition_factor < 1.05 ? { text: 'Optimale Bedingungen', color: 'text-[#043F2E]' } :
+    condition_factor < 1.15 ? { text: 'Moderate Bedingungen', color: 'text-[#C45600]' } :
+    condition_factor < 1.30 ? { text: 'Ungünstige Bedingungen', color: 'text-[#C45600]' } :
     { text: 'Sehr ungünstige Bedingungen', color: 'text-red-600' };
 
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Fahrbedingungen</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Fahrbedingungen</h2>
         <p className="text-sm text-slate-500 mt-1">
           Diese Parameter bestimmen den Energieverbrauch physikalisch.
           Das Modell kalibriert sich automatisch auf den Nominalverbrauch jedes EV-Modells.
@@ -215,9 +215,9 @@ export default function Step4ReichweitenParams({ onFinish, isFinishing }: Step4R
                 key={String(opt.value)}
                 onClick={() => setHvacOn(opt.value)}
                 className={cn(
-                  'flex-1 py-3 rounded-xl border text-sm font-medium transition-all',
+                  'flex-1 py-3 rounded border text-sm font-medium transition-all',
                   hvac_on === opt.value
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    ? 'border-[#0079C0] bg-[#e6f3fc] text-[#0079C0]'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300'
                 )}
               >
@@ -242,7 +242,7 @@ export default function Step4ReichweitenParams({ onFinish, isFinishing }: Step4R
         />
 
         {/* Live condition preview */}
-        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded border border-slate-200">
           <div className="text-2xl">
             {condition_factor < 1.05 ? '✅' : condition_factor < 1.15 ? '🟡' : condition_factor < 1.30 ? '🟠' : '🔴'}
           </div>

@@ -44,7 +44,7 @@ export default function Header() {
                   setActiveProject(project);
                   navigate(`/projekte/${project.id}/wizard`);
                 }}
-                className={activeProject?.id === project.id ? 'bg-blue-50 text-blue-700' : ''}
+                className={activeProject?.id === project.id ? 'bg-[#e6f3fc] text-[#0079C0]' : ''}
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-sm">{project.name}</span>
@@ -54,8 +54,8 @@ export default function Header() {
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/projekte/neu')}>
-              <Plus className="h-4 w-4 mr-2 text-blue-600" />
-              <span className="text-blue-600 font-medium">Neues Projekt erstellen</span>
+              <Plus className="h-4 w-4 mr-2 text-[#0079C0]" />
+              <span className="text-[#0079C0] font-medium">Neues Projekt erstellen</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -76,11 +76,11 @@ export default function Header() {
         </Button>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-[#0079C0] flex items-center justify-center text-white text-xs font-semibold">
             DB
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-slate-800">Demo Benutzer</p>
+            <p className="text-sm font-medium text-[#001141]">Demo Benutzer</p>
             <p className="text-xs text-slate-400">demo@flotte.de</p>
           </div>
         </div>

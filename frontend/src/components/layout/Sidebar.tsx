@@ -46,7 +46,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-4">
-      <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aktuelles Projekt</p>
+      <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider">Aktuelles Projekt</p>
       {topItems.map((item) => (
         <NavLink
           key={item.href}
@@ -67,7 +67,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
 
       {/* Einstellungen section */}
       <div className="mt-4">
-        <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
           <Settings className="h-3 w-3" /> Einstellungen
         </p>
         {settingsItems.map((item) => (
@@ -78,8 +78,8 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -93,7 +93,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
       {isReichweitenModule ? (
         /* Reichweiten module: show only dedicated results page */
         <div className="mt-4">
-          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
             <BarChart3 className="h-3 w-3" /> Ergebnisse
           </p>
           <NavLink
@@ -102,8 +102,8 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -114,7 +114,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
       ) : isOptimierungModule ? (
         /* Ladeprozess Optimierung module: show dedicated results page */
         <div className="mt-4">
-          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
             <BarChart3 className="h-3 w-3" /> Ergebnisse
           </p>
           <NavLink
@@ -123,8 +123,8 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-green-50 text-green-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -135,7 +135,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
       ) : isBidirektionalModule ? (
         /* Bidirektional module: show only Energiearbitrage */
         <div className="mt-4">
-          <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
             <BarChart3 className="h-3 w-3" /> Ergebnisse
           </p>
           <NavLink
@@ -144,8 +144,8 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-purple-50 text-purple-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -155,10 +155,10 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
         </div>
       ) : (
       <div className={cn(
-        'mt-1 rounded-md',
-        isResultsActive ? 'bg-slate-50' : ''
+        'mt-1 rounded',
+        isResultsActive ? 'bg-white/10' : ''
       )}>
-        <div className="flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center gap-3 px-3 py-2 text-xs font-normal text-white/50 uppercase tracking-wider">
           <BarChart3 className="h-3.5 w-3.5 shrink-0" />
           <span>Ergebnisse</span>
         </div>
@@ -171,8 +171,8 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
               cn(
                 'flex items-center gap-3 pl-6 pr-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -194,19 +194,19 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex flex-col h-full bg-white border-r border-slate-200 transition-all duration-200',
+        'flex flex-col h-full bg-[#001141] border-r border-[#001141] transition-all duration-200',
         sidebarCollapsed ? 'w-16' : 'w-60'
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-slate-200 min-h-[60px]">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 shrink-0">
+      <div className="flex items-center gap-2 px-4 py-4 border-b border-white/20 min-h-[60px]">
+        <div className="flex items-center justify-center w-8 h-8 rounded bg-[#0079C0] shrink-0">
           <Zap className="w-4 h-4 text-white" />
         </div>
         {!sidebarCollapsed && (
           <div>
-            <p className="text-sm font-bold text-slate-900 leading-tight">FleetElect</p>
-            <p className="text-xs text-slate-400 leading-tight">Elektrifizierung</p>
+            <p className="text-sm font-light text-white leading-tight">FleetElect</p>
+            <p className="text-xs text-white/60 leading-tight">Elektrifizierung</p>
           </div>
         )}
       </div>
@@ -222,8 +222,8 @@ export default function Sidebar() {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white',
                 sidebarCollapsed && 'justify-center'
               )
             }
@@ -242,8 +242,8 @@ export default function Sidebar() {
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-[#0079C0] text-white font-normal'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )
             }
           >
@@ -259,10 +259,10 @@ export default function Sidebar() {
       </nav>
 
       {/* Collapse toggle */}
-      <div className="border-t border-slate-200 p-2">
+      <div className="border-t border-white/20 p-2">
         <button
           onClick={toggleSidebar}
-          className="flex items-center justify-center w-full p-2 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="flex items-center justify-center w-full p-2 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
           title={sidebarCollapsed ? 'Seitenleiste ausklappen' : 'Seitenleiste einklappen'}
         >
           {sidebarCollapsed ? (

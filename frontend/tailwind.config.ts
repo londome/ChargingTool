@@ -49,28 +49,37 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Custom fleet brand colors
+        // iE2S brand colors
+        ie2s: {
+          navy: '#001141',
+          forest: '#043F2E',
+          sky: '#BAE6FF',
+          blue: '#0079C0',
+          orange: '#C45600',
+          gray: '#EBEBEB',
+        },
+        // Aliases for easy use
         fleet: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#e6f3fc',
+          100: '#b3d9f5',
+          200: '#80bfee',
+          300: '#4da5e7',
+          400: '#1a8be0',
+          500: '#0079C0',
+          600: '#0069a8',
+          700: '#005890',
+          800: '#004778',
+          900: '#001141',
         },
         success: {
-          50: '#f0fdf4',
-          500: '#22c55e',
-          600: '#16a34a',
+          50: '#e8f5f0',
+          500: '#2d8a5e',
+          600: '#043F2E',
         },
         warning: {
-          50: '#fffbeb',
-          500: '#f59e0b',
-          600: '#d97706',
+          50: '#fdf3e6',
+          500: '#e07030',
+          600: '#C45600',
         },
         danger: {
           50: '#fef2f2',
@@ -82,6 +91,9 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      fontFamily: {
+        sans: ['Roboto', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         'accordion-down': {

@@ -70,7 +70,7 @@ export default function ScenarioManager() {
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Szenarien</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Szenarien</h1>
           <p className="text-sm text-slate-500 mt-1">Verwalten und vergleichen Sie Elektrifizierungsszenarien</p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)} className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export default function ScenarioManager() {
 
       {isLoading ? (
         <div className="space-y-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded" />)}
         </div>
       ) : scenarioList.length === 0 ? (
         <Card>
@@ -101,7 +101,7 @@ export default function ScenarioManager() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-900">{scenario.name}</h3>
+                      <h3 className="font-normal text-[#001141]">{scenario.name}</h3>
                       <Badge variant={typeColors[scenario.type] || 'default'}>
                         {getScenarioTypeLabel(scenario.type)}
                       </Badge>

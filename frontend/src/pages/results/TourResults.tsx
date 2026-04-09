@@ -54,14 +54,14 @@ export default function TourResults() {
   };
 
   const SortIcon = ({ k }: { k: SortKey }) => (
-    <ArrowUpDown className={`h-3 w-3 ml-1 inline ${sortKey === k ? 'text-blue-600' : 'text-slate-300'}`} />
+    <ArrowUpDown className={`h-3 w-3 ml-1 inline ${sortKey === k ? 'text-[#0079C0]' : 'text-slate-300'}`} />
   );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tourenanalyse</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Tourenanalyse</h1>
           <p className="text-sm text-slate-500 mt-1">
             {routes.length} Touren analysiert
           </p>
@@ -104,9 +104,9 @@ export default function TourResults() {
 
       {/* Table */}
       {isLoading ? (
-        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded" />
       ) : (
-        <div className="bg-white border rounded-xl overflow-hidden">
+        <div className="bg-white border rounded overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -137,10 +137,10 @@ export default function TourResults() {
                   <TableCell>{formatDistance(r.distance_km)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(r.fuel_cost)}</TableCell>
                   <TableCell className="text-right">{formatKWh(r.ev_energy_kwh)}</TableCell>
-                  <TableCell className={`text-right font-medium ${r.annual_cost_delta < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <TableCell className={`text-right font-medium ${r.annual_cost_delta < 0 ? 'text-[#043F2E]' : 'text-red-600'}`}>
                     {r.annual_cost_delta < 0 ? '' : '+'}{formatCurrency(r.annual_cost_delta)}
                   </TableCell>
-                  <TableCell className={`text-right ${r.annual_co2e_delta_kg < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <TableCell className={`text-right ${r.annual_co2e_delta_kg < 0 ? 'text-[#043F2E]' : 'text-red-600'}`}>
                     {r.annual_co2e_delta_kg < 0 ? '' : '+'}{(r.annual_co2e_delta_kg / 1000).toFixed(1)} t
                   </TableCell>
                 </TableRow>

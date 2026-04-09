@@ -1,29 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* iE2S color palette mapped to HSL */
+    --background: 0 0% 92%;         /* #EBEBEB gray background */
+    --foreground: 228 96% 13%;      /* #001141 navy */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 228 96% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 228 96% 13%;
+    --primary: 204 100% 37%;        /* #0079C0 blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 92%;          /* #EBEBEB */
+    --secondary-foreground: 228 96% 13%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 204 100% 37%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 204 100% 37%;
+    --radius: 0.25rem;
   }
 
   * {
@@ -32,11 +35,15 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-weight: 400;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    color: #001141;
   }
 }
 
@@ -46,7 +53,8 @@
   }
 
   .page-title {
-    @apply text-2xl font-bold text-slate-900;
+    @apply text-2xl text-ie2s-navy;
+    font-weight: 300;
   }
 
   .page-subtitle {
@@ -58,7 +66,8 @@
   }
 
   .section-title {
-    @apply text-lg font-semibold text-slate-800 mb-3;
+    @apply text-lg text-ie2s-navy mb-3;
+    font-weight: 400;
   }
 }
 

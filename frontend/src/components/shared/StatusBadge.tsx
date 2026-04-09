@@ -15,7 +15,7 @@ const statusConfig: Record<FeasibilityStatus, {
 }> = {
   [FeasibilityStatus.FEASIBLE]: {
     label: 'Machbar',
-    className: 'bg-green-50 text-green-700 border-green-200',
+    className: 'bg-[#e8f5f0] text-[#043F2E] border-green-200',
     icon: CheckCircle2,
   },
   [FeasibilityStatus.FEASIBLE_WITH_CHARGING]: {

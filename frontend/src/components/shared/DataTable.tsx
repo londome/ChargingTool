@@ -102,13 +102,13 @@ export default function DataTable<T extends Record<string, unknown>>({
 
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
     if (sortKey !== columnKey) return <ChevronsUpDown className="h-3.5 w-3.5 text-slate-300" />;
-    if (sortDir === 'asc') return <ChevronUp className="h-3.5 w-3.5 text-blue-600" />;
-    return <ChevronDown className="h-3.5 w-3.5 text-blue-600" />;
+    if (sortDir === 'asc') return <ChevronUp className="h-3.5 w-3.5 text-[#0079C0]" />;
+    return <ChevronDown className="h-3.5 w-3.5 text-[#0079C0]" />;
   };
 
   if (loading) {
     return (
-      <div className={cn('border border-slate-200 rounded-xl overflow-hidden', className)}>
+      <div className={cn('border border-slate-200 rounded overflow-hidden', className)}>
         <div className="animate-pulse">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex gap-4 px-4 py-3 border-b border-slate-100">
@@ -136,7 +136,7 @@ export default function DataTable<T extends Record<string, unknown>>({
         </div>
       )}
 
-      <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <div className="border border-slate-200 rounded overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -145,7 +145,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   <th
                     key={String(col.key)}
                     className={cn(
-                      'px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap',
+                      'px-4 py-2.5 text-left text-xs font-normal text-slate-500 uppercase tracking-wider whitespace-nowrap',
                       col.sortable && 'cursor-pointer select-none hover:bg-slate-100 transition-colors',
                       col.headerClassName
                     )}
@@ -225,7 +225,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   onClick={() => setPage(pageNum)}
                   className={cn(
                     'h-7 w-7 p-0 text-xs',
-                    isActive && 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                    isActive && 'bg-[#0079C0] hover:bg-[#005fa3] text-white border-[#0079C0]'
                   )}
                 >
                   {pageNum + 1}

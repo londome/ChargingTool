@@ -78,14 +78,14 @@ export default function FileDropzone({
 
   if (selectedFile) {
     return (
-      <div className={cn('border border-slate-200 rounded-xl p-4 bg-slate-50', className)}>
+      <div className={cn('border border-slate-200 rounded p-4 bg-slate-50', className)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <File className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-[#e6f3fc] rounded">
+              <File className="h-5 w-5 text-[#0079C0]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-800">{selectedFile.name}</p>
+              <p className="text-sm font-medium text-[#001141]">{selectedFile.name}</p>
               <p className="text-xs text-slate-400">
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
@@ -114,9 +114,9 @@ export default function FileDropzone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={cn(
-          'relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200',
+          'relative border-2 border-dashed rounded p-8 text-center transition-all duration-200',
           isDragging
-            ? 'border-blue-400 bg-blue-50'
+            ? 'border-[#0079C0] bg-[#e6f3fc]'
             : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white',
           disabled && 'opacity-50 cursor-not-allowed',
           !disabled && 'cursor-pointer'
@@ -133,15 +133,15 @@ export default function FileDropzone({
         <div className="flex flex-col items-center gap-3">
           <div className={cn(
             'p-3 rounded-full transition-colors',
-            isDragging ? 'bg-blue-100' : 'bg-slate-100'
+            isDragging ? 'bg-[#e6f3fc]' : 'bg-slate-100'
           )}>
             <Upload className={cn(
               'h-6 w-6 transition-colors',
-              isDragging ? 'text-blue-600' : 'text-slate-400'
+              isDragging ? 'text-[#0079C0]' : 'text-slate-400'
             )} />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-700">{label}</p>
+            <p className="text-sm font-medium text-[#001141]">{label}</p>
             {hint && (
               <p className="text-xs text-slate-400 mt-1">{hint}</p>
             )}

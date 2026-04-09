@@ -78,7 +78,7 @@ function ScenarioResultsPanel({ runId, projectId, scenarioId }: {
 
       {isLoading || isRunning ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded" />)}
         </div>
       ) : summary ? (
         <>
@@ -126,11 +126,11 @@ function ScenarioResultsPanel({ runId, projectId, scenarioId }: {
             />
           </div>
 
-          <div className="bg-white border rounded-xl p-5">
-            <h3 className="font-semibold text-slate-900 mb-3">Empfehlung Ladeinfrastruktur</h3>
+          <div className="bg-white border rounded p-5">
+            <h3 className="font-normal text-[#001141] mb-3">Empfehlung Ladeinfrastruktur</h3>
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <p className="text-3xl font-bold text-blue-600">{summary.recommended_charger_count}</p>
+                <p className="text-3xl font-bold text-[#0079C0]">{summary.recommended_charger_count}</p>
                 <p className="text-xs text-slate-500">Ladepunkte gesamt</p>
               </div>
               <p className="text-sm text-slate-600">
@@ -173,27 +173,27 @@ function ScenarioComparisonPanel({ runs }: { runs: (SimulationRun & {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50">
-            <th className="text-left px-4 py-3 font-semibold text-slate-700">Szenario</th>
-            <th className="text-right px-4 py-3 font-semibold text-slate-700">Elektrifizierbar</th>
-            <th className="text-right px-4 py-3 font-semibold text-slate-700">CO₂-Einsparung</th>
-            <th className="text-right px-4 py-3 font-semibold text-slate-700">TCO-Einsparung</th>
-            <th className="text-right px-4 py-3 font-semibold text-slate-700">Amortisation</th>
+            <th className="text-left px-4 py-3 font-normal text-[#001141]">Szenario</th>
+            <th className="text-right px-4 py-3 font-normal text-[#001141]">Elektrifizierbar</th>
+            <th className="text-right px-4 py-3 font-normal text-[#001141]">CO₂-Einsparung</th>
+            <th className="text-right px-4 py-3 font-normal text-[#001141]">TCO-Einsparung</th>
+            <th className="text-right px-4 py-3 font-normal text-[#001141]">Amortisation</th>
           </tr>
         </thead>
         <tbody>
           {completed.map((run, i) => (
             <tr key={run.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-              <td className="px-4 py-3 font-medium text-slate-900">
+              <td className="px-4 py-3 font-medium text-[#001141]">
                 {run.scenario_name}
                 <Badge variant="outline" className="ml-2 text-xs">{run.scenario_type}</Badge>
               </td>
               <td className="px-4 py-3 text-right text-slate-700">
                 {run.electrifiable_pct != null ? formatPercent(run.electrifiable_pct) : '–'}
               </td>
-              <td className="px-4 py-3 text-right text-green-700 font-medium">
+              <td className="px-4 py-3 text-right text-[#043F2E] font-medium">
                 {run.co2e_savings_pct != null ? formatPercent(run.co2e_savings_pct) : '–'}
               </td>
-              <td className="px-4 py-3 text-right text-green-700 font-medium">
+              <td className="px-4 py-3 text-right text-[#043F2E] font-medium">
                 {run.tco_savings != null ? formatCurrency(run.tco_savings) : '–'}
               </td>
               <td className="px-4 py-3 text-right text-slate-700">
@@ -235,7 +235,7 @@ export default function FleetResults() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Flottenergebnisse</h1>
+        <h1 className="text-2xl font-light text-[#001141]">Flottenergebnisse</h1>
         <p className="text-sm text-slate-500 mt-1">Elektrifizierungsanalyse nach Szenario</p>
       </div>
 
@@ -282,9 +282,9 @@ export default function FleetResults() {
           ))}
 
           <TabsContent value="compare" className="mt-5">
-            <div className="bg-white border rounded-xl p-5">
-              <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <BarChart2 className="h-4 w-4 text-blue-500" />
+            <div className="bg-white border rounded p-5">
+              <h3 className="font-normal text-[#001141] mb-4 flex items-center gap-2">
+                <BarChart2 className="h-4 w-4 text-[#0079C0]" />
                 Szenarien-Vergleich
               </h3>
               <ScenarioComparisonPanel runs={allRuns as any} />

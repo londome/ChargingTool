@@ -18,14 +18,14 @@ interface KPICardProps {
 
 const colorMap = {
   blue: {
-    bg: 'bg-blue-50',
-    icon: 'text-blue-600',
-    value: 'text-blue-700',
+    bg: 'bg-[#e6f3fc]',
+    icon: 'text-[#0079C0]',
+    value: 'text-[#0079C0]',
   },
   green: {
-    bg: 'bg-green-50',
-    icon: 'text-green-600',
-    value: 'text-green-700',
+    bg: 'bg-[#e8f5f0]',
+    icon: 'text-[#043F2E]',
+    value: 'text-[#043F2E]',
   },
   red: {
     bg: 'bg-red-50',
@@ -34,8 +34,8 @@ const colorMap = {
   },
   amber: {
     bg: 'bg-amber-50',
-    icon: 'text-amber-600',
-    value: 'text-amber-700',
+    icon: 'text-[#C45600]',
+    value: 'text-[#C45600]',
   },
   slate: {
     bg: 'bg-slate-50',
@@ -52,7 +52,7 @@ export default function KPICard({
 
   if (loading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 animate-pulse">
+      <div className="bg-white border border-slate-200 rounded p-4 animate-pulse">
         <div className="h-4 bg-slate-200 rounded w-24 mb-3" />
         <div className="h-7 bg-slate-200 rounded w-16 mb-2" />
         <div className="h-3 bg-slate-100 rounded w-20" />
@@ -61,7 +61,7 @@ export default function KPICard({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white border border-slate-200 rounded p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-1">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{title}</p>
@@ -77,7 +77,7 @@ export default function KPICard({
           )}
         </div>
         {Icon && (
-          <div className={cn('p-1.5 rounded-lg', colors.bg)}>
+          <div className={cn('p-1.5 rounded', colors.bg)}>
             <Icon className={cn('h-4 w-4', colors.icon)} />
           </div>
         )}
@@ -99,7 +99,7 @@ export default function KPICard({
       {trend !== undefined && (
         <div className={cn(
           'flex items-center gap-0.5 text-xs font-medium mt-1.5',
-          trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-slate-400'
+          trend > 0 ? 'text-[#043F2E]' : trend < 0 ? 'text-red-600' : 'text-slate-400'
         )}>
           <span>{trend > 0 ? '↑' : trend < 0 ? '↓' : '→'}</span>
           <span>{Math.abs(trend).toFixed(1)}%{trendLabel ? ` ${trendLabel}` : ''}</span>

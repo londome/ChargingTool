@@ -49,7 +49,7 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">EV-Modelle für die Analyse</h2>
+        <h2 className="text-lg font-normal text-[#001141]">EV-Modelle für die Analyse</h2>
         <p className="text-sm text-slate-500 mt-1">
           Wähle ein oder mehrere EV-Modelle, die du analysieren möchtest.
           Zusätzlich empfehlen wir dir automatisch passende Alternativen.
@@ -59,8 +59,8 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
       <div className="p-6 space-y-4">
         {/* Fleet segment hint */}
         {fleetSegments.length > 0 && (
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-xs font-semibold text-blue-800 mb-1.5">
+          <div className="p-3 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
+            <p className="text-xs font-normal text-[#001141] mb-1.5">
               Empfohlene Segmente für deine Flotte:
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -71,8 +71,8 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
                   className={cn(
                     'text-xs px-2.5 py-1 rounded-full border transition-colors',
                     filterSegment === s
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-blue-700 border-blue-200 hover:border-blue-400'
+                      ? 'bg-[#0079C0] text-white border-[#0079C0]'
+                      : 'bg-white text-[#0079C0] border-[#0079C0]/40 hover:border-[#0079C0]'
                   )}
                 >
                   {getSegmentLabel(s)}
@@ -104,7 +104,7 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
           />
 
           {selectedIds.length > 0 && (
-            <span className="text-xs font-medium px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-[#0079C0]/30">
               {selectedIds.length} ausgewählt
             </span>
           )}
@@ -143,26 +143,26 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
                   key={ev.id}
                   onClick={() => toggleEV(ev.id)}
                   className={cn(
-                    'relative cursor-pointer rounded-lg border p-3 transition-all select-none',
+                    'relative cursor-pointer rounded border p-3 transition-all select-none',
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 shadow-sm'
+                      ? 'border-[#0079C0] bg-[#e6f3fc] shadow-sm'
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   )}
                 >
                   {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#0079C0] flex items-center justify-center shrink-0">
                       <Check className="h-3 w-3 text-white" />
                     </div>
                   )}
                   <div className="flex items-start gap-2">
                     <div className={cn(
                       'p-1.5 rounded shrink-0',
-                      isSelected ? 'bg-blue-100' : 'bg-slate-100'
+                      isSelected ? 'bg-[#cce6f8]' : 'bg-slate-100'
                     )}>
-                      <Zap className={cn('h-3.5 w-3.5', isSelected ? 'text-blue-600' : 'text-slate-500')} />
+                      <Zap className={cn('h-3.5 w-3.5', isSelected ? 'text-[#0079C0]' : 'text-slate-500')} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900 text-sm leading-tight pr-5">
+                      <p className="font-normal text-[#001141] text-sm leading-tight pr-5">
                         {ev.manufacturer} {ev.model}
                       </p>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -182,7 +182,7 @@ export default function Step3ReichweitenEVSelection({ onFinish, isFinishing }: P
                         )}
                       </div>
                       {ev.purchase_price && (
-                        <p className="text-xs text-blue-700 font-medium mt-1">
+                        <p className="text-xs text-[#0079C0] font-medium mt-1">
                           ab {formatCurrency(ev.purchase_price)}
                         </p>
                       )}

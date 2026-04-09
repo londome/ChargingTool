@@ -135,14 +135,14 @@ export default function Step6Scenarios() {
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Szenarien definieren</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Szenarien definieren</h2>
         <p className="text-sm text-slate-500 mt-1">
           Wählen Sie Szenarien für die Simulation. Sie können mehrere Szenarien gleichzeitig berechnen.
         </p>
       </div>
 
       <div className="p-6 space-y-4">
-        <h3 className="text-sm font-semibold text-slate-700">Vordefinierte Szenarien</h3>
+        <h3 className="text-sm font-normal text-[#001141]">Vordefinierte Szenarien</h3>
         <div className="space-y-3">
           {PRESET_SCENARIOS.map((preset, index) => {
             const isSelected = selectedPresets.includes(index);
@@ -150,20 +150,20 @@ export default function Step6Scenarios() {
               <div
                 key={index}
                 onClick={() => togglePreset(index)}
-                className={`cursor-pointer rounded-lg border p-4 transition-all ${
-                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'
+                className={`cursor-pointer rounded border p-4 transition-all ${
+                  isSelected ? 'border-[#0079C0] bg-[#e6f3fc]' : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5 ${
-                      isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                      isSelected ? 'bg-[#0079C0] border-[#0079C0]' : 'border-slate-300'
                     }`}>
                       {isSelected && <Check className="h-3 w-3 text-white" />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900 text-sm">{preset.name}</p>
+                        <p className="font-normal text-[#001141] text-sm">{preset.name}</p>
                         <Badge variant={
                           preset.type === ScenarioType.OPTIMISTIC ? 'success' :
                           preset.type === ScenarioType.CONSERVATIVE ? 'warning' : 'secondary'
@@ -186,8 +186,8 @@ export default function Step6Scenarios() {
           })}
         </div>
 
-        <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
-          <p className="text-xs text-amber-700">
+        <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-100">
+          <p className="text-xs text-[#C45600]">
             <strong>Hinweis:</strong> Die Simulation wird direkt im Anschluss gestartet.
             Ergebnisse sind in der Regel innerhalb weniger Sekunden verfügbar.
             Sie können Szenarien jederzeit im Szenariomanager anpassen.

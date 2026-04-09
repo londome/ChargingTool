@@ -295,7 +295,7 @@ export default function InfrastructureResults() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Ladeinfrastruktur</h1>
+        <h1 className="text-2xl font-light text-[#001141]">Ladeinfrastruktur</h1>
         <p className="text-sm text-slate-500 mt-1">
           Infrastrukturbedarf für die Elektrifizierung Ihrer Flotte
         </p>
@@ -303,7 +303,7 @@ export default function InfrastructureResults() {
 
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded" />)}
         </div>
       ) : infra ? (
         <>
@@ -394,7 +394,7 @@ export default function InfrastructureResults() {
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+              <div className="mt-4 p-3 bg-[#e6f3fc] rounded text-xs text-[#0079C0]">
                 <strong>Berechnungsformel:</strong>{' '}
                 N_Ladepunkte = ⌈ Σ(E_EV_i / (P_Lader × η)) / (T_Fenster × Auslastungsziel) ⌉
                 <br />
@@ -409,33 +409,33 @@ export default function InfrastructureResults() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-slate-900">
+                <div className="text-center p-3 bg-slate-50 rounded">
+                  <p className="text-2xl font-bold text-[#001141]">
                     {infra.infra_capex_total
                       ? `${Math.round(Number(infra.infra_capex_total) / Number(infra.required_charger_count) - Number(infra.installation_cost_per_point ?? 0)).toLocaleString('de-DE')} €`
                       : `${(Number(infra.depot_chargers) * 1200).toLocaleString('de-DE')} €`}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">{infra.required_charger_count}× Wallbox</p>
                 </div>
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-slate-900">
+                <div className="text-center p-3 bg-slate-50 rounded">
+                  <p className="text-2xl font-bold text-[#001141]">
                     {infra.installation_cost_per_point != null
                       ? `${(Number(infra.installation_cost_per_point) * Number(infra.required_charger_count)).toLocaleString('de-DE')} €`
                       : `~${(Number(infra.depot_chargers) * 3500).toLocaleString('de-DE')} €`}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">Installation</p>
                   {infra.installation_cost_per_point != null && (
-                    <p className="text-xs text-blue-600 mt-0.5">{Number(infra.installation_cost_per_point).toLocaleString('de-DE')} €/LP</p>
+                    <p className="text-xs text-[#0079C0] mt-0.5">{Number(infra.installation_cost_per_point).toLocaleString('de-DE')} €/LP</p>
                   )}
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-2xl font-bold text-blue-900">
+                <div className="text-center p-3 bg-[#e6f3fc] rounded border border-[#0079C0]/30">
+                  <p className="text-2xl font-bold text-[#001141]">
                     {infra.infra_capex_total
                       ? `${Math.round(Number(infra.infra_capex_total)).toLocaleString('de-DE')} €`
                       : `~${(Number(infra.depot_chargers) * 12000).toLocaleString('de-DE')} €`}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">Gesamt-Investition</p>
-                  {infra.infra_capex_total && <p className="text-xs text-blue-600 mt-0.5">In TCO berücksichtigt</p>}
+                  {infra.infra_capex_total && <p className="text-xs text-[#0079C0] mt-0.5">In TCO berücksichtigt</p>}
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-3">
@@ -464,7 +464,7 @@ export default function InfrastructureResults() {
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-slate-400" />
                   <select
-                    className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="h-8 rounded border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0079C0]"
                     value={effectiveDate ?? ''}
                     onChange={e => setSelectedDate(e.target.value || null)}
                   >
@@ -509,10 +509,10 @@ export default function InfrastructureResults() {
                       const total = payload.find(p => p.dataKey === 'total_kw');
                       const tours = payload.filter(p => String(p.dataKey).startsWith('t'));
                       return (
-                        <div className="bg-white border border-slate-200 rounded-lg p-2 text-xs shadow-md">
+                        <div className="bg-white border border-slate-200 rounded p-2 text-xs shadow-md">
                           <p className="font-semibold mb-1">{label} Uhr</p>
                           {total && (
-                            <p className="text-orange-700 font-semibold">
+                            <p className="text-[#C45600] font-semibold">
                               Flotte gesamt: {Number(total.value).toFixed(1)} kW
                             </p>
                           )}
@@ -590,7 +590,7 @@ export default function InfrastructureResults() {
                         const active_tours = payload.filter(p => p.value != null);
                         if (!active_tours.length) return null;
                         return (
-                          <div className="bg-white border border-slate-200 rounded-lg p-2 text-xs shadow-md">
+                          <div className="bg-white border border-slate-200 rounded p-2 text-xs shadow-md">
                             <p className="font-semibold mb-1">{label} Uhr</p>
                             {active_tours.map((p, j) => (
                               <p key={j} style={{ color: p.stroke as string }}>
@@ -692,29 +692,29 @@ export default function InfrastructureResults() {
             {/* ── KPI bar ──────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {hasLastgang && (
-                <div className="text-center p-2 bg-blue-50 rounded-lg">
-                  <p className="font-semibold text-blue-900">{Number(depotPeak).toFixed(0)} kW</p>
+                <div className="text-center p-2 bg-[#e6f3fc] rounded">
+                  <p className="font-semibold text-[#001141]">{Number(depotPeak).toFixed(0)} kW</p>
                   <p className="text-slate-500">Depot-Spitze</p>
                 </div>
               )}
-              <div className="text-center p-2 bg-orange-50 rounded-lg">
-                <p className="font-semibold text-orange-900">{evPeak.toFixed(0)} kW</p>
+              <div className="text-center p-2 bg-orange-50 rounded">
+                <p className="font-semibold text-[#C45600]">{evPeak.toFixed(0)} kW</p>
                 <p className="text-slate-500">EV-Peak (GCP)</p>
               </div>
               {hasLastgang && (
-                <div className={`text-center p-2 rounded-lg ${overLimit ? 'bg-red-50' : 'bg-green-50'}`}>
-                  <p className={`font-semibold ${overLimit ? 'text-red-900' : 'text-green-900'}`}>
+                <div className={`text-center p-2 rounded ${overLimit ? 'bg-red-50' : 'bg-[#e8f5f0]'}`}>
+                  <p className={`font-semibold ${overLimit ? 'text-red-900' : 'text-[#043F2E]'}`}>
                     {combinedPeak.toFixed(0)} kW
                   </p>
                   <p className="text-slate-500">Kombiniert Peak</p>
                 </div>
               )}
-              <div className="text-center p-2 bg-slate-50 rounded-lg">
-                <p className="font-semibold text-slate-900">{totalEvKwh.toFixed(0)} kWh</p>
+              <div className="text-center p-2 bg-slate-50 rounded">
+                <p className="font-semibold text-[#001141]">{totalEvKwh.toFixed(0)} kWh</p>
                 <p className="text-slate-500">Energie/Tag</p>
               </div>
-              <div className="text-center p-2 bg-slate-50 rounded-lg">
-                <p className="font-semibold text-slate-900">{evTours.length} Touren</p>
+              <div className="text-center p-2 bg-slate-50 rounded">
+                <p className="font-semibold text-[#001141]">{evTours.length} Touren</p>
                 <p className="text-slate-500">mit Ladebedarf</p>
               </div>
             </div>
@@ -730,12 +730,12 @@ export default function InfrastructureResults() {
       )}
 
       {/* ── Projekt abschließen ─────────────────────────────────────────────── */}
-      <Card className="border-green-200 bg-green-50">
+      <Card className="border-[#043F2E] bg-[#e8f5f0]">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-green-900">Simulation abgeschlossen</h3>
-              <p className="text-sm text-green-700 mt-0.5">
+              <h3 className="font-normal text-[#043F2E]">Simulation abgeschlossen</h3>
+              <p className="text-sm text-[#043F2E]/80 mt-0.5">
                 Laden Sie einen PDF-Bericht herunter oder schließen Sie das Projekt.
               </p>
             </div>

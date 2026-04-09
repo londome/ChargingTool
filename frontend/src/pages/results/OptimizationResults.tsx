@@ -46,19 +46,19 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sub, icon: Icon, color = 'blue' }: KpiCardProps) {
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    amber: 'bg-amber-50 text-amber-600',
+    blue: 'bg-[#e6f3fc] text-[#0079C0]',
+    green: 'bg-[#e8f5f0] text-[#043F2E]',
+    amber: 'bg-amber-50 text-[#C45600]',
     purple: 'bg-purple-50 text-purple-600',
   };
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
-      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${colorMap[color] || colorMap.blue}`}>
+    <div className="bg-white rounded border border-slate-200 p-5 flex items-start gap-4">
+      <div className={`flex items-center justify-center w-10 h-10 rounded shrink-0 ${colorMap[color] || colorMap.blue}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
         <p className="text-xs text-slate-500 font-medium">{label}</p>
-        <p className="text-xl font-bold text-slate-900 leading-tight">{value}</p>
+        <p className="text-xl font-bold text-[#001141] leading-tight">{value}</p>
         {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -234,7 +234,7 @@ export default function OptimizationResults() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Ladeprozess Optimierung</h1>
+          <h1 className="text-2xl font-light text-[#001141]">Ladeprozess Optimierung</h1>
           <p className="text-sm text-slate-500 mt-1">
             LP-basierte kostenoptimale Ladeplanung mit ENTSO-E Day-Ahead Preisen
           </p>
@@ -253,14 +253,14 @@ export default function OptimizationResults() {
                 ]);
                 downloadCsv('ladeoptimierung.csv', [header, ...rows]);
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded hover:bg-slate-50"
             >
               <Download className="w-4 h-4" /> CSV
             </button>
           )}
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0079C0] rounded hover:bg-[#005fa3]"
           >
             <LayoutDashboard className="w-4 h-4" /> Fertig
           </button>
@@ -269,10 +269,10 @@ export default function OptimizationResults() {
 
       {/* Info row — metadata from the latest run */}
       {latestData && (
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-3 flex flex-wrap gap-6 text-sm">
+        <div className="bg-white rounded border border-slate-200 px-5 py-3 flex flex-wrap gap-6 text-sm">
           <div>
             <span className="text-slate-500">Datum: </span>
-            <span className="font-medium text-slate-900">{latestData.optimization_date ?? '—'}</span>
+            <span className="font-medium text-[#001141]">{latestData.optimization_date ?? '—'}</span>
           </div>
           <div>
             <span className="text-slate-500">Zone: </span>
@@ -295,8 +295,8 @@ export default function OptimizationResults() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+        <div className="bg-white rounded border border-slate-200 p-12 flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-[#043F2E] animate-spin" />
           <p className="text-sm text-slate-600 font-medium">LP-Optimierung wird berechnet...</p>
           <p className="text-xs text-slate-400">ENTSO-E Day-Ahead Preise werden abgerufen und der Ladeplan optimiert.</p>
         </div>
@@ -304,7 +304,7 @@ export default function OptimizationResults() {
 
       {/* Error / Infeasible */}
       {!isLoading && isError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-4">
+        <div className="bg-red-50 border border-red-200 rounded p-6 flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-red-800">Optimierung fehlgeschlagen</p>
@@ -314,7 +314,7 @@ export default function OptimizationResults() {
       )}
 
       {!isLoading && !isError && isInfeasible && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
+        <div className="bg-amber-50 border border-amber-200 rounded p-6 flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">Kein machbarer Ladeplan gefunden (Infeasible)</p>
@@ -335,7 +335,7 @@ export default function OptimizationResults() {
 
       {/* SOC arrival warning */}
       {!isLoading && socArrivalWarning && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">SOC-Warnung: Ankunft unter Minimum</p>
@@ -390,8 +390,8 @@ export default function OptimizationResults() {
 
           {/* Multi-day overview: daily cost bar chart */}
           {isPeriod && periodDays.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Tagesübersicht – Ladekosten</h2>
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4">Tagesübersicht – Ladekosten</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={periodDays} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -405,8 +405,8 @@ export default function OptimizationResults() {
           )}
 
           {/* Detailed charts — shown in both single-day and period mode */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-4">Strompreise & Flotten-Ladeplan</h2>
+          <div className="bg-white rounded border border-slate-200 p-6">
+            <h2 className="text-sm font-normal text-[#001141] mb-4">Strompreise & Flotten-Ladeplan</h2>
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={isPeriod ? allPriceFleetData : priceFleetData} margin={{ top: 5, right: 30, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -437,8 +437,8 @@ export default function OptimizationResults() {
 
           {/* Per-vehicle charging schedule */}
           {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Ladeplan je Fahrzeug [kW]</h2>
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4">Ladeplan je Fahrzeug [kW]</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={isPeriod ? allScheduleData : scheduleData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -471,8 +471,8 @@ export default function OptimizationResults() {
 
           {/* SOC curves */}
           {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">SOC-Verlauf je Fahrzeug [%]</h2>
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4">SOC-Verlauf je Fahrzeug [%]</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={isPeriod ? allSocData : socData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -505,15 +505,15 @@ export default function OptimizationResults() {
 
           {/* ── Kostenvergleich: Optimiert vs Sofortladen (single day) ────────── */}
           {!isPeriod && results && naiveCost > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="bg-white rounded border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-green-600" />
+                <h2 className="text-sm font-normal text-[#001141] flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-[#043F2E]" />
                   Kostenvergleich: Optimiert vs. Sofortladen
                 </h2>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                  <TrendingDown className="w-3.5 h-3.5 text-green-600" />
-                  <span className="text-xs font-semibold text-green-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#e8f5f0] border border-[#043F2E]/20 rounded">
+                  <TrendingDown className="w-3.5 h-3.5 text-[#043F2E]" />
+                  <span className="text-xs font-semibold text-[#043F2E]">
                     Ersparnis: {savingsEur.toFixed(3)} € ({savingsPct.toFixed(1)} %)
                   </span>
                 </div>
@@ -536,9 +536,9 @@ export default function OptimizationResults() {
 
           {/* ── GCP-Auslastung: Optimiert vs Sofortladen ────────────────────── */}
           {!isPeriod && results && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-600" />
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-1 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#0079C0]" />
                 GCP-Auslastung: Optimiert vs. Sofortladen
               </h2>
               <p className="text-xs text-slate-400 mb-4">
@@ -562,9 +562,9 @@ export default function OptimizationResults() {
 
           {/* ── Preishistogramm: Energie je Preisklasse ──────────────────────── */}
           {!isPeriod && priceHistData.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-amber-600" />
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-1 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-[#C45600]" />
                 Ladeenergie nach Preisklasse
               </h2>
               <p className="text-xs text-slate-400 mb-4">
@@ -588,9 +588,9 @@ export default function OptimizationResults() {
 
           {/* ── Wochenübersicht (nur Mehrtages-Modus) ────────────────────────── */}
           {isPeriod && weeklyData.length > 1 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+            <div className="bg-white rounded border border-slate-200 p-6">
+              <h2 className="text-sm font-normal text-[#001141] mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#0079C0]" />
                 Wochenübersicht – Ladekosten &amp; Energie
               </h2>
               <ResponsiveContainer width="100%" height={260}>
@@ -613,24 +613,24 @@ export default function OptimizationResults() {
 
           {/* Vehicle cost table — single day only */}
           {!isPeriod && results && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-700">Kosten je Fahrzeug</h2>
+              <h2 className="text-sm font-normal text-[#001141]">Kosten je Fahrzeug</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fahrzeug</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">Fahrzeug</th>
+                    <th className="text-right px-4 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">
                       <span title="Energie die aus dem Netz bezogen wird (inkl. Ladeverluste)">Netz [kWh] ⓘ</span>
                     </th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="text-right px-4 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">
                       <span title="Energie die in der Batterie gespeichert wird = Verbrauch der Route">Batterie [kWh] ⓘ</span>
                     </th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kosten [€]</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">SOC Ankunft</th>
-                    <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">SOC Ziel</th>
+                    <th className="text-right px-4 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">Kosten [€]</th>
+                    <th className="text-right px-4 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">SOC Ankunft</th>
+                    <th className="text-right px-6 py-3 text-xs font-normal text-slate-500 uppercase tracking-wider">SOC Ziel</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -651,7 +651,7 @@ export default function OptimizationResults() {
                       <td className="px-4 py-3 text-right text-slate-500">
                         {vr.soc_curve_pct[0]?.toFixed(0) ?? '—'}%
                       </td>
-                      <td className="px-6 py-3 text-right text-green-700 font-semibold">
+                      <td className="px-6 py-3 text-right text-[#043F2E] font-semibold">
                         {vr.soc_curve_pct[vr.soc_curve_pct.length - 1]?.toFixed(0) ?? '—'}%
                       </td>
                     </tr>
@@ -659,12 +659,12 @@ export default function OptimizationResults() {
                 </tbody>
                 <tfoot className="bg-slate-50 border-t border-slate-200">
                   <tr>
-                    <td className="px-6 py-3 font-semibold text-slate-700">Gesamt</td>
-                    <td className="px-4 py-3 text-right font-semibold text-slate-700">{results.total_energy_kwh.toFixed(1)}</td>
+                    <td className="px-6 py-3 font-semibold text-[#001141]">Gesamt</td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#001141]">{results.total_energy_kwh.toFixed(1)}</td>
                     <td className="px-4 py-3 text-right text-slate-500">
                       {results.vehicles.reduce((s, v) => s + (v.battery_energy_kwh ?? v.energy_kwh * 0.92), 0).toFixed(1)}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-green-700">{results.total_cost_eur.toFixed(3)} €</td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#043F2E]">{results.total_cost_eur.toFixed(3)} €</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
@@ -677,12 +677,12 @@ export default function OptimizationResults() {
 
       {/* Empty state */}
       {!isLoading && !isError && !results && !isPeriod && (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 flex flex-col items-center gap-4 text-center">
-          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
-            <Zap className="w-7 h-7 text-green-600" />
+        <div className="bg-white rounded border border-slate-200 p-12 flex flex-col items-center gap-4 text-center">
+          <div className="w-14 h-14 rounded-full bg-[#e8f5f0] flex items-center justify-center">
+            <Zap className="w-7 h-7 text-[#043F2E]" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">Noch keine Optimierung durchgeführt</p>
+            <p className="text-sm font-normal text-[#001141]">Noch keine Optimierung durchgeführt</p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm">
               Schließe den Wizard ab (Schritt 6 – Ladestrategie) um die LP-Optimierung zu starten.
             </p>
@@ -690,7 +690,7 @@ export default function OptimizationResults() {
           {pid && (
             <button
               onClick={() => navigate(`/projekte/${pid}/wizard`)}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 mt-2"
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#043F2E] rounded hover:bg-[#032d20] mt-2"
             >
               <Zap className="w-4 h-4" /> Zum Wizard – Optimierung starten
             </button>

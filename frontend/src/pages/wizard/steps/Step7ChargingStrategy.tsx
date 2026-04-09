@@ -77,11 +77,11 @@ export default function Step7ChargingStrategy() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-          <Zap className="w-5 h-5 text-green-600" />
+        <div className="w-10 h-10 bg-[#e8f5f0] rounded flex items-center justify-center shrink-0">
+          <Zap className="w-5 h-5 text-[#043F2E]" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Ladestrategie & Optimierung</h2>
+          <h2 className="text-lg font-normal text-[#001141]">Ladestrategie & Optimierung</h2>
           <p className="text-sm text-slate-500">
             Wähle Datum und Strategie – alle weiteren Parameter werden aus dem Wizard übernommen.
           </p>
@@ -91,11 +91,11 @@ export default function Step7ChargingStrategy() {
       {/* Strategy selector (currently only one option) */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">Ladestrategie</Label>
-        <div className="flex items-center gap-3 p-4 rounded-lg border border-green-200 bg-green-50">
-          <Zap className="w-5 h-5 text-green-600 shrink-0" />
+        <div className="flex items-center gap-3 p-4 rounded border border-green-200 bg-[#e8f5f0]">
+          <Zap className="w-5 h-5 text-[#043F2E] shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-green-900">Day-Ahead Optimiert</p>
-            <p className="text-xs text-green-700">
+            <p className="text-sm font-normal text-[#043F2E]">Day-Ahead Optimiert</p>
+            <p className="text-xs text-[#043F2E]/80">
               Minimiert Ladekosten basierend auf ENTSO-E Day-Ahead Strompreisen (15-min-Intervalle, LP-Optimierung)
             </p>
           </div>
@@ -161,27 +161,27 @@ export default function Step7ChargingStrategy() {
       </div>
 
       {/* Wizard params summary (read-only) */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+      <div className="rounded border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-[#001141]">
           <Settings className="w-4 h-4 text-slate-400" />
           Parameter aus Wizard (Schritt 3 &amp; 4)
         </div>
         <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Max. Netzanschluss (GCP)</span>
-            <span className="font-medium text-slate-800">{gcpDefault} kW</span>
+            <span className="font-medium text-[#001141]">{gcpDefault} kW</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Wallbox-Leistung</span>
-            <span className="font-medium text-slate-800">{wallboxDefault} kW</span>
+            <span className="font-medium text-[#001141]">{wallboxDefault} kW</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">SOC-Ziel</span>
-            <span className="font-medium text-slate-800">{socTargetDefault} %</span>
+            <span className="font-medium text-[#001141]">{socTargetDefault} %</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Min. SOC bei Ankunft</span>
-            <span className="font-medium text-slate-800">{socMinDefault} %</span>
+            <span className="font-medium text-[#001141]">{socMinDefault} %</span>
           </div>
         </div>
         <div className="flex items-start gap-2 text-xs text-slate-500 pt-1 border-t border-slate-200">
@@ -191,7 +191,7 @@ export default function Step7ChargingStrategy() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        <div className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -201,7 +201,7 @@ export default function Step7ChargingStrategy() {
         <Button
           onClick={handleStart}
           disabled={runOptimization.isPending || !dateFrom}
-          className="bg-green-600 hover:bg-green-700 text-white px-6"
+          className="bg-[#043F2E] hover:bg-[#032d20] text-white px-6"
         >
           {runOptimization.isPending ? (
             <>

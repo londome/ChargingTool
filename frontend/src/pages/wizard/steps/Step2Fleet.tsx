@@ -99,7 +99,7 @@ export default function Step2Fleet() {
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Flottenerfassung</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Flottenerfassung</h2>
         <p className="text-sm text-slate-500 mt-1">
           Erfassen Sie Ihre aktuellen Fahrzeuge mit Verbrauch, Laufleistung und Kosten.
         </p>
@@ -109,7 +109,7 @@ export default function Step2Fleet() {
         {/* Existing vehicles table */}
         {vehicles.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">
+            <h3 className="text-sm font-normal text-[#001141] mb-2">
               Erfasste Fahrzeuge ({vehicles.reduce((s, v) => s + v.count, 0)} gesamt)
             </h3>
             <div className="border rounded-lg overflow-hidden">
@@ -153,7 +153,7 @@ export default function Step2Fleet() {
         {/* Add vehicle form */}
         {showForm ? (
           <form onSubmit={handleSubmit(onAddVehicle)} className="border rounded-lg p-4 bg-slate-50 space-y-4">
-            <h4 className="font-semibold text-slate-800 text-sm">
+            <h4 className="font-normal text-[#001141] text-sm">
               {editIndex !== null ? 'Fahrzeug bearbeiten' : 'Fahrzeug hinzufügen'}
             </h4>
 

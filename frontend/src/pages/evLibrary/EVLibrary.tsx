@@ -27,7 +27,7 @@ export default function EVLibrary() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">EV-Modell-Bibliothek</h1>
+        <h1 className="text-2xl font-light text-[#001141]">EV-Modell-Bibliothek</h1>
         <p className="text-sm text-slate-500 mt-1">
           {modelList.length} Elektrofahrzeuge für Nutzfahrzeugeinsatz
         </p>
@@ -63,7 +63,7 @@ export default function EVLibrary() {
       {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
+          {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-52 rounded" />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -72,11 +72,11 @@ export default function EVLibrary() {
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-bold text-slate-900">{ev.manufacturer}</p>
+                    <p className="font-bold text-[#001141]">{ev.manufacturer}</p>
                     <p className="text-sm text-slate-700 font-medium">{ev.model}</p>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-blue-50">
-                    <Zap className="h-4 w-4 text-blue-600" />
+                  <div className="p-1.5 rounded bg-[#e6f3fc]">
+                    <Zap className="h-4 w-4 text-[#0079C0]" />
                   </div>
                 </div>
 
@@ -107,7 +107,7 @@ export default function EVLibrary() {
 
                 <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                   {ev.purchase_price ? (
-                    <span className="text-sm font-semibold text-blue-700">
+                    <span className="text-sm font-semibold text-[#0079C0]">
                       ab {formatCurrency(ev.purchase_price)}
                     </span>
                   ) : ev.lease_monthly ? (

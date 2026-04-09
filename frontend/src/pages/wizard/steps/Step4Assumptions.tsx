@@ -43,7 +43,7 @@ export default function Step4Assumptions() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Laderahmenbedingungen</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Laderahmenbedingungen</h2>
         <p className="text-sm text-slate-500 mt-1">
           Definieren Sie Annahmen für Laden, Strompreise und Emissionsfaktoren.
         </p>
@@ -120,8 +120,8 @@ export default function Step4Assumptions() {
         </div>
 
         {/* Summary */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <h4 className="text-xs font-semibold text-blue-800 mb-2">Vorschau Annahmen</h4>
+        <div className="mt-4 p-3 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
+          <h4 className="text-xs font-normal text-[#001141] mb-2">Vorschau Annahmen</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             <div><span className="text-slate-500">SOC Abfahrt / Reserve:</span> <span className="font-medium">{watch('soc_target')}% / {watch('soc_min')}%</span></div>
             <div><span className="text-slate-500">Ladeleistung:</span> <span className="font-medium">{watch('charging_power_kw')} kW</span></div>

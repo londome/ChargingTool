@@ -57,7 +57,7 @@ export default function Step1ProjectContext() {
   return (
     <form onSubmit={handleSubmit(onSubmit, onValidationError)}>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Projektkontext</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Projektkontext</h2>
         <p className="text-sm text-slate-500 mt-1">
           Definieren Sie die grundlegenden Rahmenbedingungen Ihres Elektrifizierungsprojekts.
         </p>

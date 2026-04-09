@@ -53,7 +53,7 @@ export default function ModuleSelector({ onSelect }: ModuleSelectorProps) {
   return (
     <div className="min-h-[60vh] flex flex-col justify-center py-12 px-4 animate-fade-in">
       <div className="text-center mb-10">
-        <h1 className="text-2xl font-bold text-slate-900">Simulationsmodul wählen</h1>
+        <h1 className="text-2xl font-light text-[#001141]">Simulationsmodul wählen</h1>
         <p className="text-sm text-slate-500 mt-2">
           Wähle ein Modul, um das Projekt-Setup anzupassen.
         </p>
@@ -66,9 +66,9 @@ export default function ModuleSelector({ onSelect }: ModuleSelectorProps) {
             disabled={!mod.enabled}
             onClick={() => mod.enabled && onSelect(mod.id)}
             className={cn(
-              'relative flex flex-col items-start text-left p-6 rounded-xl border transition-all',
+              'relative flex flex-col items-start text-left p-6 rounded border transition-all',
               mod.enabled
-                ? 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-md cursor-pointer group'
+                ? 'border-slate-200 bg-white hover:border-[#0079C0] hover:shadow-md cursor-pointer group'
                 : 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
             )}
           >
@@ -79,18 +79,18 @@ export default function ModuleSelector({ onSelect }: ModuleSelectorProps) {
             )}
 
             <div className={cn(
-              'flex items-center justify-center w-10 h-10 rounded-lg mb-4',
+              'flex items-center justify-center w-10 h-10 rounded mb-4',
               !mod.enabled ? 'bg-slate-100 text-slate-400'
-              : mod.iconColor === 'green' ? 'bg-green-50 text-green-600 group-hover:bg-green-100'
+              : mod.iconColor === 'green' ? 'bg-[#e8f5f0] text-[#043F2E] group-hover:bg-[#d0ebdf]'
               : mod.iconColor === 'purple' ? 'bg-purple-50 text-purple-600 group-hover:bg-purple-100'
-              : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'
+              : 'bg-[#e6f3fc] text-[#0079C0] group-hover:bg-[#cce6f8]'
             )}>
               <mod.icon className="w-5 h-5" />
             </div>
 
             <p className={cn(
-              'font-semibold text-sm leading-snug',
-              mod.enabled ? 'text-slate-900' : 'text-slate-400'
+              'font-normal text-sm leading-snug',
+              mod.enabled ? 'text-[#001141]' : 'text-slate-400'
             )}>
               {mod.title}
             </p>

@@ -172,7 +172,7 @@ export default function Step3Depot() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-900">Depot</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Depot</h2>
         <p className="text-sm text-slate-500 mt-1">
           Netzanschluss, Photovoltaik und Investitionskosten der Ladeinfrastruktur.
         </p>
@@ -182,7 +182,7 @@ export default function Step3Depot() {
 
         {/* Netzanschluss */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <h3 className="text-sm font-normal text-[#001141] flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-500" /> Netzanschluss
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,8 +228,8 @@ export default function Step3Depot() {
 
         {/* Photovoltaik */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <Sun className="h-4 w-4 text-orange-400" /> Photovoltaikanlage
+          <h3 className="text-sm font-normal text-[#001141] flex items-center gap-2">
+            <Sun className="h-4 w-4 text-[#C45600]" /> Photovoltaikanlage
           </h3>
           <SliderField
             label="PV-Leistung" unit="kWp" min={0} max={1000} step={5}
@@ -240,7 +240,7 @@ export default function Step3Depot() {
 
         {/* Depot Lastgang / Load Profile */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <h3 className="text-sm font-normal text-[#001141] flex items-center gap-2">
             <Zap className="h-4 w-4 text-purple-500" /> Depot-Lastprofil (Lastgang)
           </h3>
           <p className="text-xs text-slate-500">
@@ -312,8 +312,8 @@ export default function Step3Depot() {
         </div>
 
         {/* Summary */}
-        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <h4 className="text-xs font-semibold text-blue-800 mb-2">Vorschau Depot</h4>
+        <div className="p-3 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
+          <h4 className="text-xs font-normal text-[#001141] mb-2">Vorschau Depot</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             <div><span className="text-slate-500">Anschlussleistung:</span> <span className="font-medium">{watch('max_grid_connection_kw')} kW</span></div>
             <div><span className="text-slate-500">Spannungsebene:</span> <span className="font-medium">{watch('voltage_level')}</span></div>
