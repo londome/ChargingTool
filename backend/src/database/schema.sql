@@ -105,8 +105,9 @@ CREATE TABLE IF NOT EXISTS ev_models (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_ev_models_segment ON ev_models(segment);
-CREATE INDEX idx_ev_models_active ON ev_models(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_models_unique ON ev_models(manufacturer, model);
+CREATE INDEX IF NOT EXISTS idx_ev_models_segment ON ev_models(segment);
+CREATE INDEX IF NOT EXISTS idx_ev_models_active ON ev_models(is_active);
 
 -- ============================================================
 -- ROUTES (TOUR DATA)

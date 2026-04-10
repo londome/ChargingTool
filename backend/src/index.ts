@@ -121,6 +121,8 @@ async function runMigrations() {
       completed_at TIMESTAMPTZ
     )`,
     `CREATE INDEX IF NOT EXISTS idx_arbitrage_runs_project_id ON arbitrage_runs(project_id)`,
+    // Unique index on ev_models to support upserts
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_models_unique ON ev_models(manufacturer, model)`,
   ];
   for (const sql of migrations) {
     try { await query(sql); } catch (e) { console.warn('Migration skipped:', (e as Error).message); }
