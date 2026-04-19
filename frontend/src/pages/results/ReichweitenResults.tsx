@@ -268,7 +268,9 @@ export default function ReichweitenResults() {
 
   // KPI stats
   const allEVs = [...selected_ev_results, ...recommended_ev_results];
-  const fullyCompatible = allEVs.filter(ev => ev.summary.feasible_pct === 100).length;
+  const selectedRoutes = has_selection && selected_ev_results.length > 0 ? selected_ev_results[0].route_results : allEVs[0]?.route_results ?? [];
+  const notFeasibleCount = selectedRoutes.filter(r => !r.feasible_with_charging).length;
+  const totalRoutes = selectedRoutes.length;
   const longestRoute = Math.max(...(allEVs[0]?.route_results.map(r => r.distance_km) ?? [0]));
   const selectedPct = has_selection && selected_ev_results.length > 0
     ? selected_ev_results[0].summary.feasible_pct
@@ -328,12 +330,12 @@ export default function ReichweitenResults() {
           tooltip={selectedPct !== null ? "Anteil elektifizierbarer Routen für das gewählte EV-Modell" : "Kein Modell gewählt — zeigt bestes Ergebnis aller analysierten Modelle"}
         />
         <KPICard
-          title="Vollständig elektrifizierbar"
-          value={String(fullyCompatible)}
-          unit="Modelle — alle Routen abgedeckt"
-          icon={Zap}
-          color="blue"
-          tooltip="EV-Modelle, die jede Route ohne Unterschreitung der SOC-Reserve schaffen"
+          title="Nicht elektrifizierbar"
+          value={String(notFeasibleCount)}
+          unit={`von ${totalRoutes} Routen`}
+          icon={XCircle}
+          color={notFeasibleCount === 0 ? "green" : "red"}
+          tooltip="Routen, die das gewählte EV-Modell nicht ohne Unterschreitung der SOC-Reserve bewältigen kann"
         />
         <KPICard
           title="Längste Route"
