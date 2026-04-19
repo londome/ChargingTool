@@ -132,9 +132,9 @@ export default function Dashboard() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <FolderOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-slate-600 font-normal">Noch keine Flottenanalyse erstellt</h3>
+              <h3 className="text-slate-600 font-normal">Noch keine Simulation gestartet</h3>
               <p className="text-slate-400 text-sm mt-2 mb-1 max-w-md mx-auto">
-                Erstellen Sie eine Analyse pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
+                Starten Sie eine Simulation pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
               </p>
               <Button onClick={() => navigate('/projekte/neu')}>
                 <Plus className="h-4 w-4 mr-2" />
