@@ -286,12 +286,12 @@ export default function ReichweitenResults() {
         <div>
           <h1 className="text-2xl font-light text-[#001141]">Reichweiten Analyse</h1>
           <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
-            Machbarkeitsbewertung der Elektrifizierung ·{' '}
+            Elektrifizierbar / Nicht elektrifizierbar ·{' '}
             Nutzbare Batteriekapazität: {soc_start - soc_min}%
             <span className="relative group cursor-pointer">
               <Info className="h-3.5 w-3.5 text-slate-400 hover:text-[#0079C0] transition-colors" />
               <span className="absolute left-5 top-0 z-20 hidden group-hover:block w-64 bg-[#001141] text-white text-xs rounded p-3 shadow-lg leading-relaxed">
-                Das Fahrzeug startet mit <strong>{soc_start}%</strong> Ladestand und muss mit mindestens <strong>{soc_min}%</strong> Reserve ankommen. Nutzbar sind damit <strong>{soc_start - soc_min}%</strong> der Batteriekapazität pro Tour.
+                Bewertet, ob Touren elektrisch durchführbar sind. Das Fahrzeug startet mit <strong>{soc_start}%</strong> Ladestand und muss mit mindestens <strong>{soc_min}%</strong> Reserve ankommen. Nutzbar sind damit <strong>{soc_start - soc_min}%</strong> der Batteriekapazität pro Tour.
               </span>
             </span>
           </p>
