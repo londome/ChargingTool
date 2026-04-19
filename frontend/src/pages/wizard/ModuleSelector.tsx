@@ -29,7 +29,7 @@ const MODULES: Module[] = [
   },
   {
     id: 'ladeprozess_optimierung',
-    title: 'Ladeprozess Optimierung',
+    title: 'Ladeoptimierung Simulator (Unidirektional)',
     description: 'LP-basierte Ladeoptimierung mit Day-Ahead Preisen',
     icon: Zap,
     enabled: true,
@@ -37,7 +37,7 @@ const MODULES: Module[] = [
   },
   {
     id: 'ladeprozess_bidirektional',
-    title: 'Bidirektionales Laden & Arbitrage',
+    title: 'Ladeoptimierung Simulator (Bidirektional)',
     description: 'MILP-basierte Energiearbitrage: Lade bei niedrigen Preisen, entlade bei hohen Preisen. Maximiere Einnahmen durch Day-Ahead Preissignale.',
     icon: BatteryCharging,
     enabled: true,
