@@ -53,14 +53,15 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPICard
-          title="Projekte"
+          title="Flottenanalysen"
           value={isLoading ? '...' : String(projectList.length)}
           unit="gesamt"
           icon={FolderOpen}
           color="blue"
+          tooltip="Anzahl erstellter Flottenanalysen (Standorte / Fahrzeugtypen)"
         />
         <KPICard
-          title="Simulationen"
+          title="Auswertungen"
           value={stats ? String(stats.simulation_count) : '–'}
           unit="abgeschlossen"
           icon={Activity}
@@ -73,7 +74,7 @@ export default function Dashboard() {
           unit=""
           icon={BarChart3}
           color="amber"
-          tooltip="Datum des zuletzt erstellten Projekts"
+          tooltip="Datum der zuletzt erstellten Analyse"
         />
       </div>
 
@@ -125,9 +126,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Projects */}
+      {/* Flottenanalysen */}
       <div>
-        <h2 className="text-lg font-normal text-[#001141] mb-3">Aktuelle Projekte</h2>
+        <h2 className="text-lg font-normal text-[#001141] mb-3">Meine Flottenanalysen</h2>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -136,16 +137,17 @@ export default function Dashboard() {
             ))}
           </div>
         ) : projectList.length === 0 ? (
-          <Card>
+          <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <FolderOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-slate-600 font-medium">Noch keine Projekte</h3>
-              <p className="text-slate-400 text-sm mt-1 mb-4">
-                Starten Sie Ihre erste Flottenelektrifizierungs-Analyse
+              <h3 className="text-slate-600 font-normal">Noch keine Flottenanalyse erstellt</h3>
+              <p className="text-slate-400 text-sm mt-2 mb-1 max-w-md mx-auto">
+                Erstellen Sie eine Analyse pro Standort oder Fahrzeugtyp — z.B. <em>„Furgonetas Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
               </p>
+              <p className="text-slate-400 text-xs mb-5">Jede Analyse enthält eine Flotte, Routen und Simulationsergebnisse.</p>
               <Button onClick={() => navigate('/projekte/neu')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Erstes Projekt erstellen
+                Erste Analyse starten
               </Button>
             </CardContent>
           </Card>
@@ -156,35 +158,41 @@ export default function Dashboard() {
                 <CardContent className="py-4 px-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded bg-gradient-to-br from-[#0079C0] to-[#001141] flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-10 h-10 rounded bg-gradient-to-br from-[#0079C0] to-[#001141] flex items-center justify-center text-white font-bold text-sm shrink-0">
                         {project.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-normal text-[#001141]">{project.name}</h3>
                           {project.wizard_module === 'reichweiten' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-green-200">
-                              Reichweiten Simulator
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-green-200">
+                              Reichweiten-Analyse
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-blue-200">
-                              Ladeprozess Simulator
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-blue-200">
+                              Ladeinfrastruktur
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess_optimierung' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-emerald-200">
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e8f5f0] text-[#043F2E] border border-emerald-200">
                               Ladeoptimierung
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess_bidirektional' && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                              Bidirektional & Arbitrage
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                              V2G / Bidirektional
+                            </span>
+                          )}
+                          {(!project.wizard_module || project.wizard_module === 'flotte_elektrifizierung') && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-blue-200">
+                              Flottenelektrifizierung
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400">
-                          {project.industry} · {project.depot_location} · Erstellt {formatDate(project.created_at)}
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {[project.fleet_type, project.depot_location, project.industry].filter(Boolean).join(' · ')}
+                          <span className="ml-2 text-slate-300">Erstellt {formatDate(project.created_at)}</span>
                         </p>
                       </div>
                     </div>
