@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Zap, Truck, BarChart3, FolderOpen, Trash2, Activity, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Plus, ArrowRight, Zap, BarChart3, FolderOpen, Trash2, Activity, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,14 +62,6 @@ export default function Dashboard() {
           unit="gesamt"
           icon={FolderOpen}
           color="blue"
-        />
-        <KPICard
-          title="Fahrzeuge erfasst"
-          value={stats ? String(stats.vehicle_count) : '–'}
-          unit="gesamt"
-          icon={Truck}
-          color="blue"
-          tooltip="Gesamtanzahl erfasster Fahrzeuge über alle Projekte"
         />
         <KPICard
           title="Simulationen"
