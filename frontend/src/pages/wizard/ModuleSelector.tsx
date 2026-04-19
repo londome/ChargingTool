@@ -30,7 +30,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_optimierung',
     title: 'Ladeprozessoptimierung (V1X)',
-    description: 'Simulation von Ladekosten und CO₂-Emissionen auf Basis externer Signale. LP-basierte Optimierung des Ladezeitpunkts.',
+    description: 'Simulation von Ladekosten und CO₂-Emissionen auf Basis externer Signale. LP-basierte Optimierung.',
     icon: Zap,
     enabled: true,
     iconColor: 'green',
