@@ -520,7 +520,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Reihe 1 */}
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Tour-ID</Label>
                       <Input className="h-8 text-xs" placeholder="TOUR_001" value={route.route_id}
@@ -548,6 +549,9 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  {/* Reihe 2 */}
+                  <div className="grid grid-cols-4 gap-3 mt-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Trips/Jahr</Label>
                       <Input className="h-8 text-xs" type="number" min="1" max="365" value={route.trips_per_year}
