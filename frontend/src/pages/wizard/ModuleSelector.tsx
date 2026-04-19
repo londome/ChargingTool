@@ -53,7 +53,7 @@ export default function ModuleSelector({ onSelect }: ModuleSelectorProps) {
   return (
     <div className="min-h-[60vh] flex flex-col justify-center py-12 px-4 animate-fade-in">
       <div className="text-center mb-10">
-        <h1 className="text-2xl font-light text-[#001141]">Welche Simulation möchten Sie durchführen?</h1>
+        <h1 className="text-2xl font-light text-[#001141]">Simulationsmodul auswählen</h1>
         <p className="text-sm text-slate-500 mt-2">
           Wählen Sie ein Modul, um die Simulation zu starten.
         </p>
