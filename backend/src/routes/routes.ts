@@ -219,33 +219,39 @@ router.post('/manual', async (req: Request, res: Response) => {
 
     const inserted: Route[] = [];
     for (const r of routes) {
-      const id = uuidv4();
-      const result = await query<Route>(
-        `INSERT INTO routes (id, project_id, vehicle_id, route_id, distance_km, stops, dwell_time_min,
-          avg_speed_kmh, payload_kg, source_type, start_time, end_time, vehicle_count, trips_per_year,
-          sim_temperature_c, sim_hvac_on, sim_city_share, sim_rural_share, sim_hwy_share)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'manual',$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
-        [
-          id, project_id,
-          r.vehicle_id || null,
-          r.route_id || `MANUAL_${id.substring(0, 8)}`,
-          r.distance_km,
-          r.stops || 0,
-          r.dwell_time_min || 0,
-          r.avg_speed_kmh || null,
-          r.payload_kg || null,
-          r.start_time || null,
-          r.end_time || null,
-          r.vehicle_count || 1,
-          r.trips_per_year || 250,
-          r.sim_temperature_c ?? 15,
-          r.sim_hvac_on ?? false,
-          r.sim_city_share ?? 0.5,
-          r.sim_rural_share ?? 0.3,
-          r.sim_hwy_share ?? 0.2,
-        ]
-      );
-      inserted.push(result.rows[0]);
+      const count = r.vehicle_count && r.vehicle_count > 1 ? r.vehicle_count : 1;
+      const baseRouteId = r.route_id || `MANUAL_${uuidv4().substring(0, 8)}`;
+
+      for (let v = 1; v <= count; v++) {
+        const id = uuidv4();
+        const routeId = count > 1 ? `${baseRouteId}_V${v}` : baseRouteId;
+        const result = await query<Route>(
+          `INSERT INTO routes (id, project_id, vehicle_id, route_id, distance_km, stops, dwell_time_min,
+            avg_speed_kmh, payload_kg, source_type, start_time, end_time, vehicle_count, trips_per_year,
+            sim_temperature_c, sim_hvac_on, sim_city_share, sim_rural_share, sim_hwy_share)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'manual',$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+          [
+            id, project_id,
+            r.vehicle_id || null,
+            routeId,
+            r.distance_km,
+            r.stops || 0,
+            r.dwell_time_min || 0,
+            r.avg_speed_kmh || null,
+            r.payload_kg || null,
+            r.start_time || null,
+            r.end_time || null,
+            1, // cada ruta representa 1 vehículo
+            r.trips_per_year || 250,
+            r.sim_temperature_c ?? 15,
+            r.sim_hvac_on ?? false,
+            r.sim_city_share ?? 0.5,
+            r.sim_rural_share ?? 0.3,
+            r.sim_hwy_share ?? 0.2,
+          ]
+        );
+        inserted.push(result.rows[0]);
+      }
     }
 
     res.status(201).json({ data: inserted });
