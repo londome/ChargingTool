@@ -81,83 +81,52 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card
-          className="cursor-pointer hover:border-[#0079C0] hover:shadow-md transition-all group"
+      {/* Quick actions — zwei Buttons */}
+      <div className="flex gap-3">
+        <button
           onClick={() => navigate('/projekte/neu')}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0079C0] text-white rounded text-sm font-normal hover:bg-[#005fa3] transition-colors"
         >
-          <CardContent className="pt-6 pb-4">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0] group-hover:bg-[#cce6f8] transition-colors">
-                <Plus className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-normal text-[#001141]">Analyse starten</h3>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  Neues Projekt mit dem Wizard einrichten
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <Plus className="h-4 w-4" />
+          Analyse starten
+        </button>
 
-        <Card
-          className="cursor-pointer hover:border-[#043F2E] hover:shadow-md transition-all group"
-          onClick={() => navigate('/fahrzeuge')}
-        >
-          <CardContent className="pt-6 pb-4">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded bg-[#e8f5f0] text-[#043F2E] group-hover:bg-[#d0ebdf] transition-colors">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-normal text-[#001141]">EV-Modelle erkunden</h3>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  {evModelCount > 0 ? `Bibliothek mit ${evModelCount} aktuellen Fahrzeugmodellen` : 'EV-Fahrzeugbibliothek laden…'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all">
-          <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0]">
-                <BarChart3 className="h-4 w-4" />
-              </div>
-              <h3 className="font-normal text-[#001141] text-sm">Berichte & Export</h3>
-            </div>
-            {simList.length === 0 ? (
-              <p className="text-xs text-slate-400 py-2 text-center">Noch keine abgeschlossenen Simulationen</p>
-            ) : (
-              <div className="space-y-2">
-                {simList.map((sim) => (
-                  <div key={sim.run_id} className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-slate-600 truncate flex-1">{sim.project_name}</span>
-                    <div className="flex gap-1 shrink-0">
-                      <a
-                        href={`/api/exports/results/${sim.run_id}/csv`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e6f3fc] hover:text-[#0079C0] hover:border-[#0079C0] transition-colors"
-                      >
-                        CSV
-                      </a>
-                      <a
-                        href={`/api/exports/results/${sim.run_id}/xlsx`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e8f5f0] hover:text-[#043F2E] hover:border-[#043F2E] transition-colors"
-                      >
-                        XLSX
-                      </a>
+        <div className="relative group">
+          <button className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-[#001141] rounded text-sm font-normal hover:border-[#0079C0] hover:text-[#0079C0] transition-colors bg-white">
+            <BarChart3 className="h-4 w-4" />
+            Berichte & Export
+          </button>
+          {/* Dropdown */}
+          <div className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded shadow-lg z-10 hidden group-hover:block">
+            <div className="p-3">
+              {simList.length === 0 ? (
+                <p className="text-xs text-slate-400 py-2 text-center">Noch keine abgeschlossenen Simulationen</p>
+              ) : (
+                <div className="space-y-2">
+                  {simList.map((sim) => (
+                    <div key={sim.run_id} className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-600 truncate flex-1">{sim.project_name}</span>
+                      <div className="flex gap-1 shrink-0">
+                        <a
+                          href={`/api/exports/results/${sim.run_id}/csv`}
+                          className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e6f3fc] hover:text-[#0079C0] hover:border-[#0079C0] transition-colors"
+                        >
+                          CSV
+                        </a>
+                        <a
+                          href={`/api/exports/results/${sim.run_id}/xlsx`}
+                          className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e8f5f0] hover:text-[#043F2E] hover:border-[#043F2E] transition-colors"
+                        >
+                          XLSX
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent Projects */}
