@@ -406,15 +406,74 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
           </TabsList>
 
           {/* ── CSV Tab ──────────────────────────────────────────────────── */}
-          <TabsContent value="upload" className="mt-4 space-y-5">
-            <Alert variant="info">
-              <AlertDescription>
-                Jede Zeile = eine Tour. Alle Fahrzeugparameter kommen aus dem CSV.<br />
-                <strong>Pflichtfelder:</strong> <code>distance_km</code>, <code>departure_time</code>, <code>arrival_time</code>, <code>date</code><br />
-                <strong>Optional:</strong> <code>route_id</code>, <code>vehicle_count</code>, <code>stops</code>, <code>consumption_l_100km</code>, <code>avg_speed_kmh</code>, <code>payload_kg</code>
-              </AlertDescription>
-            </Alert>
+          <TabsContent value="upload" className="mt-4 space-y-4">
 
+            {/* Feldbeschreibung */}
+            <div className="rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
+              {/* Pflichtfelder */}
+              <div className="px-4 py-3">
+                <p className="text-xs font-medium text-[#001141] mb-2">Pflichtfelder</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  {[
+                    { field: 'date', desc: 'Datum der Tour', fmt: 'YYYY-MM-DD', ex: '2024-03-15' },
+                    { field: 'distance_km', desc: 'Streckenlänge der Tour', fmt: 'Zahl', ex: '120' },
+                    { field: 'departure_time', desc: 'Abfahrtszeit', fmt: 'HH:MM', ex: '06:00' },
+                    { field: 'arrival_time', desc: 'Ankunftszeit am Depot', fmt: 'HH:MM', ex: '18:00' },
+                  ].map(({ field, desc, fmt, ex }) => (
+                    <div key={field} className="flex items-start gap-2">
+                      <code className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[#0079C0] shrink-0 font-mono">{field}</code>
+                      <span className="text-xs text-slate-500">{desc} <span className="text-slate-400">({fmt}, z.B. {ex})</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optionale Felder */}
+              <div className="px-4 py-3">
+                <p className="text-xs font-medium text-[#001141] mb-2">Optionale Felder</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  {[
+                    { field: 'route_id', desc: 'Tour-Bezeichnung', ex: 'TOUR_001' },
+                    { field: 'vehicle_count', desc: 'Anzahl Fahrzeuge auf dieser Tour', ex: '3' },
+                    { field: 'stops', desc: 'Anzahl Zwischenstopps', ex: '5' },
+                    { field: 'consumption_l_100km', desc: 'Verbrauch des Verbrenners', ex: '8.5' },
+                    { field: 'avg_speed_kmh', desc: 'Durchschnittsgeschwindigkeit', ex: '55' },
+                    { field: 'payload_kg', desc: 'Nutzlast in kg', ex: '800' },
+                  ].map(({ field, desc, ex }) => (
+                    <div key={field} className="flex items-start gap-2">
+                      <code className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-500 shrink-0 font-mono">{field}</code>
+                      <span className="text-xs text-slate-400">{desc} <span className="text-slate-300">(z.B. {ex})</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Beispiel-CSV Download */}
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Vorlage herunterladen und befüllen</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const csv = [
+                      'route_id,date,distance_km,departure_time,arrival_time,vehicle_count,stops,consumption_l_100km,avg_speed_kmh,payload_kg',
+                      'TOUR_001,2024-03-15,120,06:00,18:00,1,5,8.5,55,800',
+                      'TOUR_002,2024-03-15,85,07:30,15:30,2,3,9.0,50,600',
+                      'TOUR_003,2024-03-15,200,05:00,20:00,1,8,8.0,60,1000',
+                    ].join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'touren_vorlage.csv'; a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[#0079C0] text-[#0079C0] rounded hover:bg-[#e6f3fc] transition-colors"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Vorlage (CSV)
+                </button>
+              </div>
+            </div>
+
+            {/* Dropzone */}
             <FileDropzone accept={['.csv', '.xlsx']} onFileSelect={handleFileSelect}
               label="CSV oder XLSX-Datei hier ablegen oder auswählen" />
 
