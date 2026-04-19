@@ -240,9 +240,18 @@ export async function runReichweitenSimulation(
     throw new Error('Keine EV-Modelle in der Datenbank gefunden.');
   }
 
+  // Segmente der Flotte ermitteln — nur passende EV-Typen empfehlen
+  const fleetSegmentResult = await query<{ segment: string }>(
+    `SELECT DISTINCT fv.segment FROM fleet_vehicles fv
+     JOIN fleets f ON f.id = fv.fleet_id
+     WHERE f.project_id = $1`,
+    [projectId]
+  );
+  const fleetSegments = fleetSegmentResult.rows.map(r => r.segment);
+
   const hasSelection = selectedEVIds.length > 0;
 
-  // Ausgewählte EV-Modelle evaluieren
+  // Ausgewählte EV-Modelle evaluieren (keine Segmentfilterung — User hat bewusst gewählt)
   const selectedModels = hasSelection
     ? allEVModels.filter(ev => selectedEVIds.includes(ev.id))
     : [];
@@ -251,11 +260,14 @@ export async function runReichweitenSimulation(
     evaluateEV(ev, routes)
   );
 
-  // Restliche Modelle für Empfehlungen evaluieren
+  // Empfehlungen: nur EV-Modelle passend zum Flottentyp
   const selectedIdSet = new Set(selectedEVIds);
-  const otherModels = allEVModels.filter(ev => !selectedIdSet.has(ev.id));
+  const candidateModels = allEVModels.filter(ev =>
+    !selectedIdSet.has(ev.id) &&
+    (fleetSegments.length === 0 || fleetSegments.includes(ev.segment))
+  );
 
-  const recommended_ev_results = otherModels
+  const recommended_ev_results = candidateModels
     .map(ev => evaluateEV(ev, routes))
     .sort((a, b) =>
       b.summary.feasible_pct - a.summary.feasible_pct ||
