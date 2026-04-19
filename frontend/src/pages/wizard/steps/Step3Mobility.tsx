@@ -790,15 +790,15 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
 
           {/* ── Fleet Level Tab ───────────────────────────────────────────── */}
           <TabsContent value="fleet_level" className="mt-4 space-y-4">
-            <Alert variant="info">
-              <AlertDescription>
-                Definieren Sie pro Fahrzeugtyp Verbrauch, Laufleistung und Fahrtzeiten.
-                Repräsentative Touren werden automatisch berechnet.
-                {isReichweitenMode && (
-                  <><br /><strong>Reichweiten-Analyse:</strong> Tour-Distanz = km/Jahr ÷ Trips/Jahr (pro Fahrt).</>
-                )}
-              </AlertDescription>
-            </Alert>
+            {/* Erklärung */}
+            <div className="rounded border border-slate-200 bg-slate-50 px-4 py-3 space-y-1">
+              <p className="text-xs font-medium text-[#001141]">Aggregiertes Flottenprofil</p>
+              <p className="text-xs text-slate-500">
+                Geben Sie pro Fahrzeugtyp die jährliche Fahrleistung an. Das System berechnet daraus eine repräsentative Tour
+                (<strong>Distanz = km/Jahr ÷ Trips/Jahr</strong>) und verwendet denselben Simulationsmotor wie bei der manuellen Eingabe.
+                Geeignet für eine schnelle Ersteinschätzung ohne Einzeltourdaten.
+              </p>
+            </div>
             <div className="space-y-3">
               {fleetEntries.map((entry, i) => (
                 <div key={i} className="border rounded-lg p-3 bg-slate-50">
@@ -812,7 +812,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Reihe 1 — Fahrzeugtyp */}
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Segment</Label>
                       <Select value={entry.segment} onValueChange={v => updateFleetEntry(i, 'segment', v)}>
@@ -837,8 +838,11 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <Input className="h-8 text-xs" type="number" step="0.1" value={entry.consumption_l_100km}
                         onChange={e => updateFleetEntry(i, 'consumption_l_100km', parseFloat(e.target.value))} />
                     </div>
+                  </div>
+                  {/* Reihe 2 — Fahrleistung & Zeiten */}
+                  <div className="grid grid-cols-4 gap-3 mt-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">km/Jahr (gesamt)</Label>
+                      <Label className="text-xs">km/Jahr</Label>
                       <Input className="h-8 text-xs" type="number" value={entry.annual_km}
                         onChange={e => updateFleetEntry(i, 'annual_km', parseInt(e.target.value))} />
                     </div>
@@ -846,21 +850,6 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <Label className="text-xs">Trips/Jahr</Label>
                       <Input className="h-8 text-xs" type="number" min="1" max="365" value={entry.trips_per_year}
                         onChange={e => updateFleetEntry(i, 'trips_per_year', parseInt(e.target.value) || 250)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Nutzlast (kg)</Label>
-                      <Input className="h-8 text-xs" type="number" value={entry.payload_kg}
-                        onChange={e => updateFleetEntry(i, 'payload_kg', parseInt(e.target.value))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Fahrzeugwert (€)</Label>
-                      <Input className="h-8 text-xs" type="number" value={entry.capex}
-                        onChange={e => updateFleetEntry(i, 'capex', parseInt(e.target.value))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Wartung/Jahr (€)</Label>
-                      <Input className="h-8 text-xs" type="number" value={entry.maintenance_cost_annual}
-                        onChange={e => updateFleetEntry(i, 'maintenance_cost_annual', parseInt(e.target.value))} />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs flex items-center gap-1"><Clock className="h-3 w-3" />Abfahrtszeit</Label>
@@ -872,25 +861,24 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <Input className="h-8 text-xs" type="time" value={entry.arrival_time}
                         onChange={e => updateFleetEntry(i, 'arrival_time', e.target.value)} />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Stopps/Tour</Label>
-                      <Input className="h-8 text-xs" type="number" value={entry.stops}
-                        onChange={e => updateFleetEntry(i, 'stops', parseInt(e.target.value))} />
-                    </div>
-                    <div className="flex items-end pb-1 flex-col gap-1">
+                  </div>
+                  {/* Tour-Info */}
+                  {(entry.departure_time && entry.arrival_time) || (entry.trips_per_year > 0 && entry.annual_km > 0) ? (
+                    <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">
+                      {entry.trips_per_year > 0 && entry.annual_km > 0 && (
+                        <span className="flex items-center gap-1 text-[#0079C0]">
+                          <Gauge className="h-3 w-3" />
+                          Repräsentative Tour: <strong>{Math.round(entry.annual_km / entry.trips_per_year)} km</strong>
+                        </span>
+                      )}
                       {entry.departure_time && entry.arrival_time && (
-                        <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           Ladefenster: {formatHours(computeChargingWindowMin(entry.departure_time, entry.arrival_time))}
-                        </p>
-                      )}
-                      {isReichweitenMode && entry.trips_per_year > 0 && (
-                        <p className="text-xs font-normal text-[#0079C0] flex items-center gap-1">
-                          🚗 Tour-Distanz: {Math.round(entry.annual_km / entry.trips_per_year)} km/Fahrt
-                        </p>
+                        </span>
                       )}
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               ))}
             </div>
