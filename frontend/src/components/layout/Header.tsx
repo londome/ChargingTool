@@ -22,49 +22,45 @@ export default function Header() {
     <header className="flex items-center justify-between h-[60px] px-6 bg-white border-b border-slate-200 shrink-0">
       {/* Project selector — nur innerhalb eines Projekts anzeigen */}
       <div className="flex items-center gap-4">
-        {isInsideProject ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2 max-w-[280px]">
-                <span className="truncate text-sm">
-                  {activeProject ? activeProject.name : 'Projekt auswählen'}
-                </span>
-                <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuLabel>Projekt wechseln</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {projectList.length === 0 && (
-                <div className="px-3 py-4 text-sm text-slate-500 text-center">
-                  Noch keine Projekte vorhanden
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2 max-w-[280px]">
+              <span className="truncate text-sm">
+                {activeProject ? activeProject.name : 'Projekt auswählen'}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <DropdownMenuLabel>Projekte</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {projectList.length === 0 && (
+              <div className="px-3 py-4 text-sm text-slate-500 text-center">
+                Noch keine Projekte vorhanden
+              </div>
+            )}
+            {projectList.map((project) => (
+              <DropdownMenuItem
+                key={project.id}
+                onClick={() => {
+                  setActiveProject(project);
+                  navigate(`/projekte/${project.id}/wizard`);
+                }}
+                className={activeProject?.id === project.id ? 'bg-[#e6f3fc] text-[#0079C0]' : ''}
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm">{project.name}</span>
+                  <span className="text-xs text-slate-400">{project.industry} · {formatDate(project.created_at)}</span>
                 </div>
-              )}
-              {projectList.map((project) => (
-                <DropdownMenuItem
-                  key={project.id}
-                  onClick={() => {
-                    setActiveProject(project);
-                    navigate(`/projekte/${project.id}/wizard`);
-                  }}
-                  className={activeProject?.id === project.id ? 'bg-[#e6f3fc] text-[#0079C0]' : ''}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{project.name}</span>
-                    <span className="text-xs text-slate-400">{project.industry} · {formatDate(project.created_at)}</span>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/projekte/neu')}>
-                <Plus className="h-4 w-4 mr-2 text-[#0079C0]" />
-                <span className="text-[#0079C0] font-medium">Neues Projekt erstellen</span>
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <span className="text-sm font-light text-[#001141]">FleetIQ <span className="text-slate-400 font-normal">by iE2S</span></span>
-        )}
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/projekte/neu')}>
+              <Plus className="h-4 w-4 mr-2 text-[#0079C0]" />
+              <span className="text-[#0079C0] font-medium">Neues Projekt erstellen</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Right side */}
