@@ -479,11 +479,6 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Anzahl</Label>
-                        <Input className="h-8 text-xs" type="number" value={vt.count}
-                          onChange={e => updateVehicleType(vi, 'count', parseInt(e.target.value) || 1)} />
-                      </div>
-                      <div className="space-y-1">
                         <Label className="text-xs">Verbrauch (l/100km)</Label>
                         <Input className="h-8 text-xs" type="number" step="0.1" value={vt.consumption_l_100km}
                           onChange={e => updateVehicleType(vi, 'consumption_l_100km', parseFloat(e.target.value))} />
@@ -541,10 +536,39 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <Input className="h-8 text-xs" type="number" value={route.stops}
                         onChange={e => updateRoute(ri, 'stops', parseInt(e.target.value))} />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Anzahl Fahrzeuge</Label>
-                      <Input className="h-8 text-xs" type="number" min="1" value={route.vehicle_count}
-                        onChange={e => updateRoute(ri, 'vehicle_count', parseInt(e.target.value) || 1)} />
+                    <div className="space-y-1 col-span-2 sm:col-span-1">
+                      <Label className="text-xs">Fahrzeugtyp</Label>
+                      <div className="flex items-center gap-2">
+                        <Select value={String(route.vehicle_type_idx)}
+                          onValueChange={v => updateRoute(ri, 'vehicle_type_idx', parseInt(v))}>
+                          <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {vehicleTypes.map((vt, vi) => (
+                              <SelectItem key={vi} value={String(vi)}>Fahrzeugtyp {vi + 1}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <input
+                          type="checkbox"
+                          id={`multi-${ri}`}
+                          checked={route.vehicle_count > 1}
+                          onChange={(e) => updateRoute(ri, 'vehicle_count', e.target.checked ? 2 : 1)}
+                          className="h-3.5 w-3.5 accent-[#0079C0] cursor-pointer"
+                        />
+                        <label htmlFor={`multi-${ri}`} className="text-xs text-slate-500 cursor-pointer">
+                          Mehrere Fahrzeuge dieses Typs
+                        </label>
+                        {route.vehicle_count > 1 && (
+                          <Input
+                            className="h-7 text-xs w-16"
+                            type="number" min="2"
+                            value={route.vehicle_count}
+                            onChange={e => updateRoute(ri, 'vehicle_count', parseInt(e.target.value) || 2)}
+                          />
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Trips/Jahr</Label>
@@ -565,20 +589,6 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <Label className="text-xs">Ø-Tempo (km/h)</Label>
                       <Input className="h-8 text-xs" type="number" value={route.avg_speed_kmh}
                         onChange={e => updateRoute(ri, 'avg_speed_kmh', parseFloat(e.target.value))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Fahrzeugtyp</Label>
-                      <Select value={String(route.vehicle_type_idx)}
-                        onValueChange={v => updateRoute(ri, 'vehicle_type_idx', parseInt(v))}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {vehicleTypes.map((vt, vi) => (
-                            <SelectItem key={vi} value={String(vi)}>
-                              Fahrzeugtyp {vi + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                   {route.departure_time && route.arrival_time && (
