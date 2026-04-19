@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Edit, BarChart3, Plus, Trash2, CheckCircle, Loader2, Clock, Truck, Thermometer, Wind, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Edit, BarChart3, Plus, Trash2, CheckCircle, Loader2, Clock, Truck, Thermometer, Wind, ChevronDown, ChevronUp, Gauge } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
 import { useAddManualRoutes, useClearRoutes, uploadRoutes, useCreateFleet } from '@/lib/api';
 import { Button } from '@/components/ui/button';
