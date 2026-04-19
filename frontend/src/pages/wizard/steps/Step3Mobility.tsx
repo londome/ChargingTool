@@ -678,8 +678,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                             <span className="text-xs text-slate-500 font-medium">Nutzungsmix</span>
                             {[
                               { key: 'sim_city_share' as const, label: 'Stadt', color: 'accent-[#0079C0]' },
-                              { key: 'sim_rural_share' as const, label: 'Landstraße', color: 'accent-green-600' },
-                              { key: 'sim_hwy_share' as const, label: 'Autobahn', color: 'accent-orange-500' },
+                              { key: 'sim_rural_share' as const, label: 'Landstraße', color: 'accent-[#043F2E]' },
+                              { key: 'sim_hwy_share' as const, label: 'Autobahn', color: 'accent-[#C45600]' },
                             ].map(({ key, label, color }) => {
                               const pct = Math.round((route[key] as number) * 100);
                               return (
