@@ -434,16 +434,16 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                 <p className="text-xs font-medium text-[#001141] mb-2">Optionale Felder</p>
                 <div className="space-y-1.5">
                   {[
-                    { field: 'route_id', desc: 'Tour-Bezeichnung', ex: 'TOUR_001' },
-                    { field: 'vehicle_count', desc: 'Anzahl Fahrzeuge auf dieser Tour', ex: '3' },
-                    { field: 'stops', desc: 'Anzahl Zwischenstopps', ex: '5' },
-                    { field: 'consumption_l_100km', desc: 'Kraftstoffverbrauch (l/100km)', ex: '8.5' },
-                    { field: 'avg_speed_kmh', desc: 'Durchschnittsgeschwindigkeit', ex: '55' },
-                    { field: 'payload_kg', desc: 'Nutzlast in kg', ex: '800' },
-                  ].map(({ field, desc, ex }) => (
+                    { field: 'route_id', desc: 'Tour-Bezeichnung', ex: 'TOUR_001', used: true },
+                    { field: 'vehicle_count', desc: 'Anzahl Fahrzeuge — multipliziert Kosten & CO₂', ex: '3', used: true },
+                    { field: 'consumption_l_100km', desc: 'Kraftstoffverbrauch (überschreibt Fahrzeugtyp)', ex: '8.5', used: true },
+                    { field: 'avg_speed_kmh', desc: 'Geschwindigkeit — beeinflusst EV-Verbrauch', ex: '55', used: true },
+                    { field: 'payload_kg', desc: 'Nutzlast — beeinflusst Verbrauch (+20% bei Vollast)', ex: '800', used: true },
+                    { field: 'stops', desc: 'Zwischenstopps (wird gespeichert, nicht berechnet)', ex: '5', used: false },
+                  ].map(({ field, desc, ex, used }) => (
                     <div key={field} className="flex items-center gap-3">
-                      <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-400 font-mono w-36 shrink-0">{field}</code>
-                      <span className="text-xs text-slate-500 flex-1">{desc}</span>
+                      <code className={`text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 font-mono w-44 shrink-0 ${used ? 'text-slate-600' : 'text-slate-300'}`}>{field}</code>
+                      <span className={`text-xs flex-1 ${used ? 'text-slate-500' : 'text-slate-300'}`}>{desc}</span>
                       <span className="text-xs text-slate-300 font-mono shrink-0">z.B. {ex}</span>
                     </div>
                   ))}
@@ -473,6 +473,12 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                   <Upload className="h-3.5 w-3.5" /> Vorlage (CSV)
                 </button>
               </div>
+            </div>
+
+            {/* Hinweis trips_per_year */}
+            <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+              <span className="shrink-0 mt-0.5">ℹ️</span>
+              <span>Jede Zeile im CSV entspricht <strong>einem realen Jahresfahrt</strong> (trips_per_year = 1). Für die Jahresprojektion wiederholen Sie die Zeilen entsprechend — oder verwenden Sie die <strong>Manuelle Eingabe</strong> mit dem Feld „Trips/Jahr".</span>
             </div>
 
             {/* Dropzone */}
