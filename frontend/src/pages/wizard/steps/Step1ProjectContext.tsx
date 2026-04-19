@@ -67,7 +67,7 @@ export default function Step1ProjectContext() {
           <Input
             id="name"
             {...register('name')}
-            placeholder="z.B. Lieferwagen Depot München"
+            placeholder="z.B. Lieferwagen Depot Nord"
           />
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
