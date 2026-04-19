@@ -302,7 +302,7 @@ export default function ReichweitenResults() {
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 print-hide">
           <Button
             variant="outline"
             onClick={() => window.print()}
@@ -376,7 +376,7 @@ export default function ReichweitenResults() {
 
       {/* ── Empfehlungen ───────────────────────────────────────────────────── */}
       {recommended_ev_results.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 print-hide">
           <SectionHeader
             accent="amber"
             icon={<Star className="h-4 w-4" />}
