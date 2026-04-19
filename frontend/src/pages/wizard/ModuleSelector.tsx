@@ -30,7 +30,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_optimierung',
     title: 'Ladeprozessoptimierung (V1X)',
-    description: 'Simulation von Ladekosten und CO₂-Emissionen auf Basis externer Signale. Optimiert den Ladezeitpunkt unidirektional innerhalb der Verfügbarkeitsfenster der Fahrzeuge.',
+    description: 'Simulation von Ladekosten und CO₂-Emissionen auf Basis externer Signale. LP-basierte Optimierung des Ladezeitpunkts.',
     icon: Zap,
     enabled: true,
     iconColor: 'green',
@@ -38,7 +38,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_bidirektional',
     title: 'Ladeprozessoptimierung (V2X)',
-    description: 'Simulation von Erlösen, Ladekosten und CO₂-Emissionen mit bidirektionalem Laden. Fahrzeuge reagieren auf externe Signale beim Laden und Einspeisen und nutzen das Flexibilitätspotenzial der Flotte.',
+    description: 'Simulation von Erlösen, Ladekosten und CO₂-Emissionen mit bidirektionalem Laden auf Basis externer Signale. MILP-basierte Optimierung.',
     icon: BatteryCharging,
     enabled: true,
     iconColor: 'purple',
