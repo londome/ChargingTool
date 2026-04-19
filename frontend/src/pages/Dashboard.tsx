@@ -221,7 +221,7 @@ export default function Dashboard() {
         <CardContent className="py-5 px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h4 className="font-light text-white text-base">Haben Sie Fragen zu Ihrer Flottenelektrifizierung?</h4>
+              <h4 className="font-light text-white text-base">Haben Sie Fragen?</h4>
               <p className="text-white/70 text-sm mt-1">
                 Unsere Experten begleiten Sie von der Analyse bis zur Umsetzung.
               </p>
