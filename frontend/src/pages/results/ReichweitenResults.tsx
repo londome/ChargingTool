@@ -316,20 +316,20 @@ export default function ReichweitenResults() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPICard
-          title="Beste Abdeckung"
+          title="Max. Elektrifizierbarkeit"
           value={`${bestPct}%`}
-          unit="aller Routen machbar"
+          unit="der Routen elektrifizierbar"
           icon={CheckCircle2}
           color="green"
-          tooltip="Höchste Route-Machbarkeit unter allen analysierten EV-Modellen"
+          tooltip="Höchster Anteil elektifizierbarer Routen unter allen analysierten EV-Modellen"
         />
         <KPICard
-          title="100% kompatibel"
+          title="Vollständig elektrifizierbar"
           value={String(fullyCompatible)}
-          unit={`Modelle decken alle Routen ab`}
+          unit="Modelle — alle Routen abgedeckt"
           icon={Zap}
           color="blue"
-          tooltip="EV-Modelle, die jede Route ohne Reserve-Unterschreitung schaffen"
+          tooltip="EV-Modelle, die jede Route ohne Unterschreitung der SOC-Reserve schaffen"
         />
         <KPICard
           title="Längste Route"
