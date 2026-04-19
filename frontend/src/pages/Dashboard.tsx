@@ -243,7 +243,6 @@ export default function Dashboard() {
         <CardContent className="py-5 px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-1">Powered by iE2S</p>
               <h4 className="font-light text-white text-base">Haben Sie Fragen zu Ihrer Flottenelektrifizierung?</h4>
               <p className="text-white/70 text-sm mt-1">
                 Unsere Experten begleiten Sie von der Analyse bis zur Umsetzung.
