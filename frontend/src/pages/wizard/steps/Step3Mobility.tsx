@@ -475,12 +475,6 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
               </div>
             </div>
 
-            {/* Hinweis trips_per_year */}
-            <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-              <span className="shrink-0 mt-0.5">ℹ️</span>
-              <span>Jede Zeile im CSV entspricht <strong>einem realen Jahresfahrt</strong> (trips_per_year = 1). Für die Jahresprojektion wiederholen Sie die Zeilen entsprechend — oder verwenden Sie die <strong>Manuelle Eingabe</strong> mit dem Feld „Trips/Jahr".</span>
-            </div>
-
             {/* Dropzone */}
             <FileDropzone accept={['.csv', '.xlsx']} onFileSelect={handleFileSelect}
               label="CSV oder XLSX-Datei hier ablegen oder auswählen" />
