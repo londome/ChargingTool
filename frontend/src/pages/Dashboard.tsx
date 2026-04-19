@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Zap, Truck, BarChart3, FolderOpen, Trash2, Activity } from 'lucide-react';
+import { Plus, ArrowRight, Zap, Truck, BarChart3, FolderOpen, Trash2, Activity, Mail, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -238,31 +238,34 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Info banner */}
-      <Card className="border-[#0079C0] bg-[#e6f3fc]">
-        <CardContent className="py-5 px-5">
-          <div className="flex items-start gap-3">
-            <Zap className="h-5 w-5 text-[#0079C0] mt-0.5 shrink-0" />
-            <div className="space-y-2">
-              <h4 className="font-normal text-[#001141]">Was kann FleetIQ?</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
-                  <p className="text-xs font-medium text-[#001141]">🚛 Flottenelektrifizierung</p>
-                  <p className="text-xs text-slate-500 mt-1">Analysieren Sie, welche Fahrzeuge Ihrer Flotte durch EVs ersetzt werden können – mit TCO- und CO₂-Vergleich.</p>
-                </div>
-                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
-                  <p className="text-xs font-medium text-[#001141]">📍 Reichweiten-Simulator</p>
-                  <p className="text-xs text-slate-500 mt-1">Simulieren Sie die Reichweite unter realen Bedingungen: Temperatur, Beladung, Fahrprofil und HVAC.</p>
-                </div>
-                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
-                  <p className="text-xs font-medium text-[#001141]">⚡ Ladeoptimierung</p>
-                  <p className="text-xs text-slate-500 mt-1">Optimieren Sie den Ladeprozess Ihrer Flotte basierend auf Strompreisen und Netzanschlussleistung.</p>
-                </div>
-                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
-                  <p className="text-xs font-medium text-[#001141]">🔁 Bidirektionales Laden</p>
-                  <p className="text-xs text-slate-500 mt-1">Nutzen Sie V2G-Arbitrage: Strom günstig laden, teuer zurückspeisen – und Ladekosten senken.</p>
-                </div>
-              </div>
+      {/* iE2S Kontakt Banner */}
+      <Card className="border-[#043F2E] bg-[#043F2E]">
+        <CardContent className="py-5 px-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-1">Powered by iE2S</p>
+              <h4 className="font-light text-white text-base">Haben Sie Fragen zu Ihrer Flottenelektrifizierung?</h4>
+              <p className="text-white/70 text-sm mt-1">
+                Unsere Experten begleiten Sie von der Analyse bis zur Umsetzung.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <a
+                href="mailto:info@ie2s.com"
+                className="flex items-center gap-2 px-4 py-2 bg-white text-[#043F2E] rounded text-sm font-medium hover:bg-[#e8f5f0] transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                info@ie2s.com
+              </a>
+              <a
+                href="https://ie2s.com/de"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-transparent border border-white/40 text-white rounded text-sm font-normal hover:bg-white/10 transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                ie2s.com
+              </a>
             </div>
           </div>
         </CardContent>
