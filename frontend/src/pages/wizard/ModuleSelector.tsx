@@ -30,7 +30,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_optimierung',
     title: 'Ladeprozessoptimierung (V1X)',
-    description: 'Optimiert den Ladezeitpunkt jedes Fahrzeugs innerhalb seiner Verfügbarkeitsfenster auf Basis von Day-Ahead-Strompreisen. Minimiert Energiekosten bei unidirektionalem Laden.',
+    description: 'Optimiert den Ladezeitpunkt jedes Fahrzeugs auf Basis externer Signale (z.B. Strompreise, Netzlast). Minimiert Kosten bei unidirektionalem Laden innerhalb der Verfügbarkeitsfenster.',
     icon: Zap,
     enabled: true,
     iconColor: 'green',
@@ -38,7 +38,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_bidirektional',
     title: 'Ladeprozessoptimierung (V2X)',
-    description: 'Erweitert die Optimierung um bidirektionales Laden: Fahrzeuge laden bei niedrigen Preisen und speisen bei hohen Preisen zurück ins Netz. Berechnet Einnahmenpotenzial durch Energiearbitrage.',
+    description: 'Erweitert die Optimierung um bidirektionales Laden: Fahrzeuge reagieren auf externe Signale sowohl beim Laden als auch beim Einspeisen. Bewertet Flexibilitätspotenzial der Flotte.',
     icon: BatteryCharging,
     enabled: true,
     iconColor: 'purple',
