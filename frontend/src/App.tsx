@@ -11,6 +11,7 @@ import OptimizationResults from './pages/results/OptimizationResults';
 import ArbitrageResults from './pages/results/ArbitrageResults';
 import ScenarioManager from './pages/scenarios/ScenarioManager';
 import EVLibrary from './pages/evLibrary/EVLibrary';
+import Benutzerhandbuch from './pages/Benutzerhandbuch';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="projekte/:projectId/szenarien" element={<ScenarioManager />} />
           <Route path="ergebnisse" element={<FleetResults />} />
           <Route path="fahrzeuge" element={<EVLibrary />} />
+          <Route path="handbuch" element={<Benutzerhandbuch />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -2,7 +2,7 @@ import { NavLink, useParams, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, Truck, Route, BarChart3,
   Zap, Settings, ChevronLeft, ChevronRight,
-  Building2, FlaskConical, Gauge, Battery, BatteryCharging,
+  Building2, FlaskConical, Gauge, Battery, BatteryCharging, BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/store/projectStore';
@@ -17,6 +17,7 @@ interface NavItem {
 const staticNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, exact: true },
   { label: 'EV-Modelle', href: '/fahrzeuge', icon: Zap },
+  { label: 'Benutzerhandbuch', href: '/handbuch', icon: BookOpen },
 ];
 
 function ProjectNavItems({ projectId }: { projectId: string }) {
