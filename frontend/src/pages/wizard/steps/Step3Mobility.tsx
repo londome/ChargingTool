@@ -439,7 +439,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                     { field: 'consumption_l_100km', desc: 'Kraftstoffverbrauch (überschreibt Fahrzeugtyp)', ex: '8.5', used: true },
                     { field: 'avg_speed_kmh', desc: 'Geschwindigkeit — beeinflusst EV-Verbrauch', ex: '55', used: true },
                     { field: 'payload_kg', desc: 'Nutzlast — beeinflusst Verbrauch (+20% bei Vollast)', ex: '800', used: true },
-                    { field: 'stops', desc: 'Zwischenstopps (wird gespeichert, nicht berechnet)', ex: '5', used: false },
+                    { field: 'stops', desc: 'Anzahl Zwischenstopps', ex: '5', used: true },
                   ].map(({ field, desc, ex, used }) => (
                     <div key={field} className="flex items-center gap-3">
                       <code className={`text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 font-mono w-44 shrink-0 ${used ? 'text-slate-600' : 'text-slate-300'}`}>{field}</code>
