@@ -413,16 +413,17 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
               {/* Pflichtfelder */}
               <div className="px-4 py-3">
                 <p className="text-xs font-medium text-[#001141] mb-2">Pflichtfelder</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                <div className="space-y-1.5">
                   {[
-                    { field: 'date', desc: 'Datum der Tour', fmt: 'YYYY-MM-DD', ex: '2024-03-15' },
-                    { field: 'distance_km', desc: 'Streckenlänge der Tour', fmt: 'Zahl', ex: '120' },
-                    { field: 'departure_time', desc: 'Abfahrtszeit', fmt: 'HH:MM', ex: '06:00' },
-                    { field: 'arrival_time', desc: 'Ankunftszeit am Depot', fmt: 'HH:MM', ex: '18:00' },
-                  ].map(({ field, desc, fmt, ex }) => (
-                    <div key={field} className="flex items-start gap-2">
-                      <code className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[#0079C0] shrink-0 font-mono">{field}</code>
-                      <span className="text-xs text-slate-500">{desc} <span className="text-slate-400">({fmt}, z.B. {ex})</span></span>
+                    { field: 'date', desc: 'Datum der Tour', ex: '2024-03-15' },
+                    { field: 'distance_km', desc: 'Streckenlänge in Kilometern', ex: '120' },
+                    { field: 'departure_time', desc: 'Abfahrtszeit (HH:MM)', ex: '06:00' },
+                    { field: 'arrival_time', desc: 'Ankunftszeit am Depot (HH:MM)', ex: '18:00' },
+                  ].map(({ field, desc, ex }) => (
+                    <div key={field} className="flex items-center gap-3">
+                      <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-[#0079C0] font-mono w-36 shrink-0">{field}</code>
+                      <span className="text-xs text-slate-600 flex-1">{desc}</span>
+                      <span className="text-xs text-slate-400 font-mono shrink-0">z.B. {ex}</span>
                     </div>
                   ))}
                 </div>
@@ -431,18 +432,19 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
               {/* Optionale Felder */}
               <div className="px-4 py-3">
                 <p className="text-xs font-medium text-[#001141] mb-2">Optionale Felder</p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                <div className="space-y-1.5">
                   {[
                     { field: 'route_id', desc: 'Tour-Bezeichnung', ex: 'TOUR_001' },
                     { field: 'vehicle_count', desc: 'Anzahl Fahrzeuge auf dieser Tour', ex: '3' },
                     { field: 'stops', desc: 'Anzahl Zwischenstopps', ex: '5' },
-                    { field: 'consumption_l_100km', desc: 'Verbrauch des Verbrenners', ex: '8.5' },
+                    { field: 'consumption_l_100km', desc: 'Kraftstoffverbrauch (l/100km)', ex: '8.5' },
                     { field: 'avg_speed_kmh', desc: 'Durchschnittsgeschwindigkeit', ex: '55' },
                     { field: 'payload_kg', desc: 'Nutzlast in kg', ex: '800' },
                   ].map(({ field, desc, ex }) => (
-                    <div key={field} className="flex items-start gap-2">
-                      <code className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-500 shrink-0 font-mono">{field}</code>
-                      <span className="text-xs text-slate-400">{desc} <span className="text-slate-300">(z.B. {ex})</span></span>
+                    <div key={field} className="flex items-center gap-3">
+                      <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-400 font-mono w-36 shrink-0">{field}</code>
+                      <span className="text-xs text-slate-500 flex-1">{desc}</span>
+                      <span className="text-xs text-slate-300 font-mono shrink-0">z.B. {ex}</span>
                     </div>
                   ))}
                 </div>
