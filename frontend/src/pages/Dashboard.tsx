@@ -53,7 +53,7 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KPICard
-          title="Flottenanalysen"
+          title="Simulationen"
           value={isLoading ? '...' : String(projectList.length)}
           unit="gesamt"
           icon={FolderOpen}
