@@ -48,10 +48,6 @@ export default function Dashboard() {
             Übersicht Ihrer Flottenelektrifizierungs-Analysen
           </p>
         </div>
-        <Button onClick={() => navigate('/projekte/neu')} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Neues Projekt
-        </Button>
       </div>
 
       {/* KPI Cards */}
