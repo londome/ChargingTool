@@ -57,22 +57,18 @@ export default function Step1ProjectContext() {
   return (
     <form onSubmit={handleSubmit(onSubmit, onValidationError)}>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-normal text-[#001141]">Flottenanalyse einrichten</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Jede Analyse entspricht einer Fahrzeuggruppe oder einem Standort — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
-        </p>
+        <h2 className="text-lg font-normal text-[#001141]">Projektkontext</h2>
       </div>
 
       <div className="p-6 space-y-5">
         {/* Project name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Name der Analyse *</Label>
+          <Label htmlFor="name">Projektname *</Label>
           <Input
             id="name"
             {...register('name')}
-            placeholder="z.B. Lieferwagen Depot München oder PKW Außendienst Nord"
+            placeholder="z.B. Lieferwagen Depot München"
           />
-          <p className="text-xs text-slate-400">Tipp: Benennen Sie die Analyse nach Standort + Fahrzeugtyp für eine bessere Übersicht.</p>
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
 
