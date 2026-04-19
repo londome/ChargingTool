@@ -318,10 +318,10 @@ export default function ReichweitenResults() {
         <KPICard
           title="Max. Elektrifizierbarkeit"
           value={`${bestPct}%`}
-          unit="der Routen elektrifizierbar"
+          unit="beim besten EV-Modell"
           icon={CheckCircle2}
           color="green"
-          tooltip="Höchster Anteil elektifizierbarer Routen unter allen analysierten EV-Modellen"
+          tooltip="Höchster Anteil elektifizierbarer Routen unter allen analysierten EV-Modellen — nicht notwendigerweise das gewählte Modell"
         />
         <KPICard
           title="Vollständig elektrifizierbar"
