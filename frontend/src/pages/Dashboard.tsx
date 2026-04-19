@@ -77,7 +77,7 @@ export default function Dashboard() {
           className="flex items-center gap-2 px-5 py-2.5 bg-[#0079C0] text-white rounded text-sm font-normal hover:bg-[#005fa3] transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Analyse starten
+          Simulation starten
         </button>
 
         <div className="relative group">
@@ -138,7 +138,7 @@ export default function Dashboard() {
               </p>
               <Button onClick={() => navigate('/projekte/neu')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Erste Analyse starten
+                Erste Simulation starten
               </Button>
             </CardContent>
           </Card>
