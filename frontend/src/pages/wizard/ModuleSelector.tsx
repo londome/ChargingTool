@@ -16,21 +16,21 @@ const MODULES: Module[] = [
   {
     id: 'reichweiten',
     title: 'Reichweite',
-    description: 'Analysiere Reichweite und Machbarkeit der Elektrifizierung deiner Flotte.',
+    description: 'Prüft, ob die Routen Ihrer Flotte mit verfügbaren EV-Modellen elektrisch bewältigbar sind. Bewertet Elektrifizierbarkeit pro Fahrzeug anhand von Tagesstrecke und Batteriekapazität.',
     icon: Gauge,
     enabled: true,
   },
   {
     id: 'ladeprozess',
     title: 'Ladeprozess',
-    description: 'Vollständige Simulation des Ladeprozesses inklusive TCO, CO₂ und Infrastruktur.',
+    description: 'Simuliert den vollständigen Ladebetrieb der Flotte: Ladezeiten, benötigte Infrastruktur, TCO-Vergleich ICE vs. EV sowie CO₂-Einsparungspotenzial.',
     icon: Zap,
     enabled: true,
   },
   {
     id: 'ladeprozess_optimierung',
     title: 'Ladeprozessoptimierung (V1X)',
-    description: 'LP-basierte Ladeoptimierung mit Day-Ahead Preisen',
+    description: 'Optimiert den Ladezeitpunkt jedes Fahrzeugs innerhalb seiner Verfügbarkeitsfenster auf Basis von Day-Ahead-Strompreisen. Minimiert Energiekosten bei unidirektionalem Laden.',
     icon: Zap,
     enabled: true,
     iconColor: 'green',
@@ -38,7 +38,7 @@ const MODULES: Module[] = [
   {
     id: 'ladeprozess_bidirektional',
     title: 'Ladeprozessoptimierung (V2X)',
-    description: 'MILP-basierte Energiearbitrage: Lade bei niedrigen Preisen, entlade bei hohen Preisen. Maximiere Einnahmen durch Day-Ahead Preissignale.',
+    description: 'Erweitert die Optimierung um bidirektionales Laden: Fahrzeuge laden bei niedrigen Preisen und speisen bei hohen Preisen zurück ins Netz. Berechnet Einnahmenpotenzial durch Energiearbitrage.',
     icon: BatteryCharging,
     enabled: true,
     iconColor: 'purple',
