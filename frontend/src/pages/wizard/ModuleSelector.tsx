@@ -16,14 +16,14 @@ const MODULES: Module[] = [
   {
     id: 'reichweiten',
     title: 'Reichweite',
-    description: 'Prüft, ob die Routen Ihrer Flotte mit verfügbaren EV-Modellen elektrisch bewältigbar sind. Bewertet Elektrifizierbarkeit pro Fahrzeug anhand von Tagesstrecke und Batteriekapazität.',
+    description: 'Simulation der Reichweite und Elektrifizierbarkeit auf Basis von Tagesstrecken und verfügbaren EV-Modellen.',
     icon: Gauge,
     enabled: true,
   },
   {
     id: 'ladeprozess',
     title: 'Ladeprozess',
-    description: 'Simuliert den vollständigen Ladebetrieb der Flotte: Ladezeiten, benötigte Infrastruktur, TCO-Vergleich ICE vs. EV sowie CO₂-Einsparungspotenzial.',
+    description: 'Simulation von Ladezeiten, Infrastrukturbedarf, TCO und CO₂-Emissionen im Vergleich ICE vs. EV.',
     icon: Zap,
     enabled: true,
   },
