@@ -59,7 +59,7 @@ export default function Step1ProjectContext() {
       <div className="p-6 border-b border-slate-100">
         <h2 className="text-lg font-normal text-[#001141]">Flottenanalyse einrichten</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Jede Analyse entspricht einer Fahrzeuggruppe oder einem Standort — z.B. <em>„Furgonetas Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
+          Jede Analyse entspricht einer Fahrzeuggruppe oder einem Standort — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
         </p>
       </div>
 

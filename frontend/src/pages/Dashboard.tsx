@@ -61,7 +61,7 @@ export default function Dashboard() {
           tooltip="Anzahl erstellter Flottenanalysen (Standorte / Fahrzeugtypen)"
         />
         <KPICard
-          title="Auswertungen"
+          title="Simulationen"
           value={stats ? String(stats.simulation_count) : '–'}
           unit="abgeschlossen"
           icon={Activity}
@@ -142,7 +142,7 @@ export default function Dashboard() {
               <FolderOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
               <h3 className="text-slate-600 font-normal">Noch keine Flottenanalyse erstellt</h3>
               <p className="text-slate-400 text-sm mt-2 mb-1 max-w-md mx-auto">
-                Erstellen Sie eine Analyse pro Standort oder Fahrzeugtyp — z.B. <em>„Furgonetas Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
+                Erstellen Sie eine Analyse pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
               </p>
               <p className="text-slate-400 text-xs mb-5">Jede Analyse enthält eine Flotte, Routen und Simulationsergebnisse.</p>
               <Button onClick={() => navigate('/projekte/neu')}>

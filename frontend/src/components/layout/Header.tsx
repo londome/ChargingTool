@@ -26,13 +26,13 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2 max-w-[280px]">
               <span className="truncate text-sm">
-                {activeProject ? activeProject.name : 'Projekt auswählen'}
+                {activeProject ? activeProject.name : 'Analyse auswählen'}
               </span>
               <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-72">
-            <DropdownMenuLabel>Projekte</DropdownMenuLabel>
+            <DropdownMenuLabel>Flottenanalysen</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {projectList.length === 0 && (
               <div className="px-3 py-4 text-sm text-slate-500 text-center">
@@ -57,7 +57,7 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/projekte/neu')}>
               <Plus className="h-4 w-4 mr-2 text-[#0079C0]" />
-              <span className="text-[#0079C0] font-medium">Neues Projekt erstellen</span>
+              <span className="text-[#0079C0] font-medium">Neue Analyse erstellen</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
