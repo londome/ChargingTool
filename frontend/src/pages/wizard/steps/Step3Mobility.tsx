@@ -611,37 +611,37 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                       <button
                         type="button"
                         onClick={() => toggleConditions(ri)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-[#0079C0] hover:text-[#005fa3] transition-colors"
+                        className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-[#001141] transition-colors group"
                       >
-                        <Thermometer className="h-3.5 w-3.5" />
-                        Fahrbedingungen
-                        {expandedConditions.has(ri)
-                          ? <ChevronUp className="h-3 w-3" />
-                          : <ChevronDown className="h-3 w-3" />}
-                        <span className="ml-1 text-slate-400 font-normal">
-                          {route.sim_temperature_c > 0 ? '+' : ''}{route.sim_temperature_c}°C ·
-                          {route.sim_hvac_on ? ' HVAC Ein' : ' HVAC Aus'} ·
-                          🏙️{Math.round(route.sim_city_share * 100)}%
-                          🌲{Math.round(route.sim_rural_share * 100)}%
-                          🛣️{Math.round(route.sim_hwy_share * 100)}%
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Thermometer className="h-3.5 w-3.5 text-[#0079C0]" />
+                          Fahrbedingungen
+                        </span>
+                        <span className="flex items-center gap-2 text-slate-400">
+                          <span>{route.sim_temperature_c > 0 ? '+' : ''}{route.sim_temperature_c}°C</span>
+                          <span>·</span>
+                          <span>HVAC {route.sim_hvac_on ? 'Ein' : 'Aus'}</span>
+                          <span>·</span>
+                          <span>Stadt {Math.round(route.sim_city_share * 100)}% · Land {Math.round(route.sim_rural_share * 100)}% · BAB {Math.round(route.sim_hwy_share * 100)}%</span>
+                          {expandedConditions.has(ri) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </span>
                       </button>
 
                       {expandedConditions.has(ri) && (
-                        <div className="mt-3 space-y-3 bg-[#e6f3fc]/50 rounded p-3 border border-[#0079C0]/20">
+                        <div className="mt-3 rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
                           {/* Temperature */}
-                          <div className="flex items-center gap-3">
-                            <Label className="text-xs text-slate-600 flex items-center gap-1 w-28 shrink-0">
-                              <Thermometer className="h-3 w-3" /> Temperatur
-                            </Label>
+                          <div className="flex items-center gap-4 px-4 py-3">
+                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1.5">
+                              <Thermometer className="h-3.5 w-3.5 text-slate-400" /> Temperatur
+                            </span>
                             <input
                               type="range" min={-20} max={40} step={1}
                               value={route.sim_temperature_c}
                               onChange={e => updateRouteCond(ri, 'sim_temperature_c', Number(e.target.value))}
-                              className="flex-1 accent-blue-600"
+                              className="flex-1 accent-[#0079C0] h-1.5"
                             />
                             <span className={cn(
-                              'text-xs font-bold tabular-nums w-14 text-right',
+                              'text-xs font-semibold tabular-nums w-12 text-right',
                               route.sim_temperature_c < 0 ? 'text-[#0079C0]' :
                               route.sim_temperature_c > 28 ? 'text-[#C45600]' : 'text-slate-700'
                             )}>
@@ -650,10 +650,10 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                           </div>
 
                           {/* HVAC */}
-                          <div className="flex items-center gap-3">
-                            <Label className="text-xs text-slate-600 flex items-center gap-1 w-28 shrink-0">
-                              <Wind className="h-3 w-3" /> HVAC
-                            </Label>
+                          <div className="flex items-center gap-4 px-4 py-3">
+                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1.5">
+                              <Wind className="h-3.5 w-3.5 text-slate-400" /> HVAC
+                            </span>
                             <div className="flex gap-2">
                               {([false, true] as const).map(val => (
                                 <button
@@ -661,30 +661,30 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                                   type="button"
                                   onClick={() => updateRouteCond(ri, 'sim_hvac_on', val)}
                                   className={cn(
-                                    'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                                    'px-4 py-1 rounded text-xs border transition-colors',
                                     route.sim_hvac_on === val
                                       ? 'bg-[#0079C0] text-white border-[#0079C0]'
-                                      : 'bg-white text-slate-600 border-slate-200 hover:border-[#0079C0]'
+                                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
                                   )}
                                 >
-                                  {val ? '🌡️ Ein' : '⬜ Aus'}
+                                  {val ? 'Ein' : 'Aus'}
                                 </button>
                               ))}
                             </div>
                           </div>
 
                           {/* Usage mix */}
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-slate-600">Nutzungsmix</Label>
+                          <div className="px-4 py-3 space-y-2.5">
+                            <span className="text-xs text-slate-500 font-medium">Nutzungsmix</span>
                             {[
-                              { key: 'sim_city_share' as const, label: '🏙️ Stadt', color: 'accent-blue-500' },
-                              { key: 'sim_rural_share' as const, label: '🌲 Landstraße', color: 'accent-green-500' },
-                              { key: 'sim_hwy_share' as const, label: '🛣️ Autobahn', color: 'accent-orange-500' },
+                              { key: 'sim_city_share' as const, label: 'Stadt', color: 'accent-[#0079C0]' },
+                              { key: 'sim_rural_share' as const, label: 'Landstraße', color: 'accent-green-600' },
+                              { key: 'sim_hwy_share' as const, label: 'Autobahn', color: 'accent-orange-500' },
                             ].map(({ key, label, color }) => {
                               const pct = Math.round((route[key] as number) * 100);
                               return (
-                                <div key={key} className="flex items-center gap-2">
-                                  <span className="text-xs text-slate-500 w-24 shrink-0">{label}</span>
+                                <div key={key} className="flex items-center gap-3">
+                                  <span className="text-xs text-slate-500 w-20 shrink-0">{label}</span>
                                   <input
                                     type="range" min={0} max={100} step={5}
                                     value={pct}
@@ -702,17 +702,16 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                                       const vals: Record<string, number> = { [key]: v, [others[0].k]: r0, [others[1].k]: r1 };
                                       updateRouteCondMix(ri, vals['sim_city_share'], vals['sim_rural_share'], vals['sim_hwy_share']);
                                     }}
-                                    className={cn('flex-1', color)}
+                                    className={cn('flex-1 h-1.5', color)}
                                   />
                                   <span className="text-xs font-semibold text-slate-700 w-8 text-right tabular-nums">{pct}%</span>
                                 </div>
                               );
                             })}
-                            {/* validation */}
                             {(() => {
                               const sum = Math.round((route.sim_city_share + route.sim_rural_share + route.sim_hwy_share) * 100);
                               return sum !== 100 ? (
-                                <p className="text-xs text-red-500">Summe: {sum}% (muss 100% sein)</p>
+                                <p className="text-xs text-red-500 mt-1">Summe: {sum}% (muss 100% sein)</p>
                               ) : null;
                             })()}
                           </div>
