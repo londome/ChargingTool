@@ -270,7 +270,11 @@ export default function ReichweitenResults() {
   const allEVs = [...selected_ev_results, ...recommended_ev_results];
   const fullyCompatible = allEVs.filter(ev => ev.summary.feasible_pct === 100).length;
   const longestRoute = Math.max(...(allEVs[0]?.route_results.map(r => r.distance_km) ?? [0]));
+  const selectedPct = has_selection && selected_ev_results.length > 0
+    ? selected_ev_results[0].summary.feasible_pct
+    : null;
   const bestPct = allEVs.length > 0 ? Math.max(...allEVs.map(ev => ev.summary.feasible_pct)) : 0;
+  const displayPct = selectedPct !== null ? selectedPct : bestPct;
 
   // Unique segments from recommendations
   const segments = ['all', ...Array.from(new Set(recommended_ev_results.map(ev => ev.segment)))];
@@ -316,12 +320,12 @@ export default function ReichweitenResults() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPICard
-          title="Max. Elektrifizierbarkeit"
-          value={`${bestPct}%`}
-          unit="beim besten EV-Modell"
+          title="Elektrifizierbarkeit"
+          value={`${displayPct}%`}
+          unit={selectedPct !== null ? "der Routen — gewähltes Modell" : "der Routen — bestes Modell"}
           icon={CheckCircle2}
-          color="green"
-          tooltip="Höchster Anteil elektifizierbarer Routen unter allen analysierten EV-Modellen — nicht notwendigerweise das gewählte Modell"
+          color={displayPct === 100 ? "green" : displayPct >= 50 ? "amber" : "red"}
+          tooltip={selectedPct !== null ? "Anteil elektifizierbarer Routen für das gewählte EV-Modell" : "Kein Modell gewählt — zeigt bestes Ergebnis aller analysierten Modelle"}
         />
         <KPICard
           title="Vollständig elektrifizierbar"
