@@ -39,7 +39,7 @@ const STEPS_LADEPROZESS = [
 const STEPS_REICHWEITEN = [
   { number: 1, label: 'Projektkontext' },
   { number: 2, label: 'Mobilitätsprofil' },
-  { number: 3, label: 'EV-Auswahl & Analyse' },
+  { number: 3, label: 'EV-Auswahl' },
 ];
 
 const STEPS_BIDIREKTIONAL = [

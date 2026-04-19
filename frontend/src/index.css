@@ -91,3 +91,12 @@
 .recharts-tooltip-wrapper {
   outline: none;
 }
+
+/* Print / PDF export */
+@media print {
+  body { background: white !important; }
+  nav, aside, header, .print-hide { display: none !important; }
+  .animate-fade-in { animation: none !important; }
+  * { box-shadow: none !important; }
+  @page { margin: 20mm; }
+}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, XCircle, Gauge, Battery, Zap,
-  ChevronDown, ChevronUp, AlertTriangle, Star, Info, LayoutDashboard,
+  ChevronDown, ChevronUp, AlertTriangle, Star, Info, LayoutDashboard, FileDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReichweitenLatest, ReichweitenEVResult, ReichweitenRouteResult } from '@/lib/api';
@@ -302,14 +302,24 @@ export default function ReichweitenResults() {
             </span>
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 shrink-0"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Zum Dashboard
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            className="flex items-center gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            PDF exportieren
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Zum Dashboard
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 px-3 py-2 bg-[#e6f3fc] rounded border border-[#0079C0]/20">
