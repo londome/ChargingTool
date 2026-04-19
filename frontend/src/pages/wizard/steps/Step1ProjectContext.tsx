@@ -176,7 +176,7 @@ export default function Step1ProjectContext() {
           onClick={() => advanceToStep2(watch() as Partial<ProjectFormData>)}
           disabled={createProject.isPending}
         >
-          {createProject.isPending ? 'Wird gespeichert...' : 'Weiter zu Flotte →'}
+          {createProject.isPending ? 'Wird gespeichert...' : 'Weiter zum Mobilitätsprofil →'}
         </Button>
       </div>
     </form>
