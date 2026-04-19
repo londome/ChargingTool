@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Zap, BarChart3, FolderOpen, Trash2, Activity, Mail, ExternalLink } from 'lucide-react';
+import { Plus, ArrowRight, BarChart3, FolderOpen, Trash2, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +51,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KPICard
           title="Flottenanalysen"
           value={isLoading ? '...' : String(projectList.length)}
@@ -59,14 +59,6 @@ export default function Dashboard() {
           icon={FolderOpen}
           color="blue"
           tooltip="Anzahl erstellter Flottenanalysen (Standorte / Fahrzeugtypen)"
-        />
-        <KPICard
-          title="Simulationen"
-          value={stats ? String(stats.simulation_count) : '–'}
-          unit="abgeschlossen"
-          icon={Activity}
-          color="green"
-          tooltip="Anzahl erfolgreich abgeschlossener Simulationen"
         />
         <KPICard
           title="Letzte Aktivität"
