@@ -268,9 +268,9 @@ export default function ReichweitenResults() {
 
   // KPI stats
   const allEVs = [...selected_ev_results, ...recommended_ev_results];
-  const selectedRoutes = has_selection && selected_ev_results.length > 0 ? selected_ev_results[0].route_results : allEVs[0]?.route_results ?? [];
-  const notFeasibleCount = selectedRoutes.filter(r => !r.feasible_with_charging).length;
-  const totalRoutes = selectedRoutes.length;
+  const shortestRoute = allEVs[0]?.route_results.length
+    ? Math.min(...allEVs[0].route_results.map(r => r.distance_km))
+    : 0;
   const longestRoute = Math.max(...(allEVs[0]?.route_results.map(r => r.distance_km) ?? [0]));
   const selectedPct = has_selection && selected_ev_results.length > 0
     ? selected_ev_results[0].summary.feasible_pct
@@ -330,20 +330,20 @@ export default function ReichweitenResults() {
           tooltip={selectedPct !== null ? "Anteil elektifizierbarer Routen für das gewählte EV-Modell" : "Kein Modell gewählt — zeigt bestes Ergebnis aller analysierten Modelle"}
         />
         <KPICard
-          title="Nicht elektrifizierbar"
-          value={String(notFeasibleCount)}
-          unit={`von ${totalRoutes} Routen`}
-          icon={XCircle}
-          color={notFeasibleCount === 0 ? "green" : "red"}
-          tooltip="Routen, die das gewählte EV-Modell nicht ohne Unterschreitung der SOC-Reserve bewältigen kann"
+          title="Kürzeste Tour"
+          value={String(shortestRoute)}
+          unit="km"
+          icon={Gauge}
+          color="blue"
+          tooltip="Kürzeste Tour im Projekt"
         />
         <KPICard
-          title="Längste Route"
+          title="Längste Tour"
           value={String(longestRoute)}
           unit="km (maßgeblich)"
           icon={Gauge}
           color="amber"
-          tooltip="Längste Route im Projekt – bestimmt Mindestreichweite"
+          tooltip="Längste Tour im Projekt – bestimmt die erforderliche Mindestreichweite"
         />
       </div>
 
