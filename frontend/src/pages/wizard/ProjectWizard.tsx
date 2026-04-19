@@ -19,7 +19,7 @@ import ModuleSelector from './ModuleSelector';
 // Steps for each module
 const STEPS_OPTIMIERUNG = [
   { number: 1, label: 'Projektkontext' },
-  { number: 2, label: 'Mobilität & Fahrzeuge' },
+  { number: 2, label: 'Mobilitätsprofil' },
   { number: 3, label: 'Depot' },
   { number: 4, label: 'Ladeinfrastruktur' },
   { number: 5, label: 'EV-Auswahl' },
@@ -29,7 +29,7 @@ const STEPS_OPTIMIERUNG = [
 
 const STEPS_LADEPROZESS = [
   { number: 1, label: 'Projektkontext' },
-  { number: 2, label: 'Mobilität & Fahrzeuge' },
+  { number: 2, label: 'Mobilitätsprofil' },
   { number: 3, label: 'Depot' },
   { number: 4, label: 'Ladeinfrastruktur' },
   { number: 5, label: 'EV-Auswahl' },
@@ -38,13 +38,13 @@ const STEPS_LADEPROZESS = [
 
 const STEPS_REICHWEITEN = [
   { number: 1, label: 'Projektkontext' },
-  { number: 2, label: 'Mobilität & Touren' },
+  { number: 2, label: 'Mobilitätsprofil' },
   { number: 3, label: 'EV-Auswahl & Analyse' },
 ];
 
 const STEPS_BIDIREKTIONAL = [
   { number: 1, label: 'Projektkontext' },
-  { number: 2, label: 'Mobilität & Touren' },
+  { number: 2, label: 'Mobilitätsprofil' },
   { number: 3, label: 'Depot & Netzanschluss' },
   { number: 4, label: 'Ladeinfrastruktur' },
   { number: 5, label: 'EV-Auswahl' },

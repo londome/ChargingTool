@@ -385,9 +385,9 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
   return (
     <div>
       <div className="p-6 border-b border-slate-100">
-        <h2 className="text-lg font-normal text-[#001141]">Mobilität & Fahrzeuge</h2>
+        <h2 className="text-lg font-normal text-[#001141]">Mobilitätsprofil</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Erfassen Sie Tourdaten und Fahrzeugkonfiguration in einem Schritt.
+          Erfassen Sie das Mobilitätsprofil Ihrer Flotte — manuell, per CSV-Upload oder als aggregiertes Flottenprofil.
         </p>
       </div>
 
