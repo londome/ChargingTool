@@ -45,7 +45,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-light text-[#001141]">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Übersicht Ihrer Simulationen
+            Übersicht Ihrer Projekte
           </p>
         </div>
       </div>
@@ -53,12 +53,12 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <KPICard
-          title="Simulationen"
+          title="Projekte"
           value={isLoading ? '...' : String(projectList.length)}
           unit="gesamt"
           icon={FolderOpen}
           color="blue"
-          tooltip="Anzahl erstellter Flottenanalysen (Standorte / Fahrzeugtypen)"
+          tooltip="Anzahl erstellter Projekte"
         />
         <KPICard
           title="Letzte Aktivität"
@@ -77,7 +77,7 @@ export default function Dashboard() {
           className="flex items-center gap-2 px-5 py-2.5 bg-[#0079C0] text-white rounded text-sm font-normal hover:bg-[#005fa3] transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Simulation starten
+          Projekt starten
         </button>
 
         <div className="relative group">
@@ -120,7 +120,7 @@ export default function Dashboard() {
 
       {/* Flottenanalysen */}
       <div>
-        <h2 className="text-lg font-normal text-[#001141] mb-3">Simulationsübersicht</h2>
+        <h2 className="text-lg font-normal text-[#001141] mb-3">Projektübersicht</h2>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -132,13 +132,13 @@ export default function Dashboard() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <FolderOpen className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-slate-600 font-normal">Noch keine Simulation gestartet</h3>
+              <h3 className="text-slate-600 font-normal">Noch kein Projekt erstellt</h3>
               <p className="text-slate-400 text-sm mt-2 mb-1 max-w-md mx-auto">
-                Starten Sie eine Simulation pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
+                Erstellen Sie ein Projekt pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
               </p>
               <Button onClick={() => navigate('/projekte/neu')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Erste Simulation starten
+                Erstes Projekt starten
               </Button>
             </CardContent>
           </Card>
