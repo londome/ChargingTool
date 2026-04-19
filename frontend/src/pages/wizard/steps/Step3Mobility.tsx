@@ -794,9 +794,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
             <div className="rounded border border-slate-200 bg-slate-50 px-4 py-3 space-y-1">
               <p className="text-xs font-medium text-[#001141]">Aggregiertes Flottenprofil</p>
               <p className="text-xs text-slate-500">
-                Geben Sie pro Fahrzeugtyp die jährliche Fahrleistung an. Das System berechnet daraus eine repräsentative Tour
-                (<strong>Distanz = km/Jahr ÷ Trips/Jahr</strong>) und verwendet denselben Simulationsmotor wie bei der manuellen Eingabe.
-                Geeignet für eine schnelle Ersteinschätzung ohne Einzeltourdaten.
+                Geben Sie pro Fahrzeugtyp die jährliche Fahrleistung an.
               </p>
             </div>
             <div className="space-y-3">
