@@ -136,7 +136,6 @@ export default function Dashboard() {
               <p className="text-slate-400 text-sm mt-2 mb-1 max-w-md mx-auto">
                 Erstellen Sie eine Analyse pro Standort oder Fahrzeugtyp — z.B. <em>„Transporter Depot Nord"</em> oder <em>„LKW Fernverkehr Süd"</em>.
               </p>
-              <p className="text-slate-400 text-xs mb-5">Jede Analyse enthält eine Flotte, Routen und Simulationsergebnisse.</p>
               <Button onClick={() => navigate('/projekte/neu')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Erste Analyse starten
