@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProjects, useDeleteProject, useDashboardStats, useEVModels } from '@/lib/api';
+import { useProjects, useDeleteProject, useDashboardStats, useEVModels, useRecentSimulations } from '@/lib/api';
+import type { RecentSimulation } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 import { formatDate } from '@/lib/utils';
 import KPICard from '@/components/shared/KPICard';
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const { data: stats } = useDashboardStats();
   const { data: evModels } = useEVModels();
   const evModelCount = evModels?.length ?? 0;
+  const { data: recentSims } = useRecentSimulations();
+  const simList: RecentSimulation[] = Array.isArray(recentSims) ? recentSims : [];
   const { setActiveProject, activeProject } = useProjectStore();
   const deleteProject = useDeleteProject();
 
@@ -126,22 +129,41 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card
-          className="cursor-pointer hover:border-[#0079C0] hover:shadow-md transition-all group"
-          onClick={() => navigate('/projekte/neu')}
-        >
-          <CardContent className="pt-6 pb-4">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0] group-hover:bg-[#cce6f8] transition-colors">
-                <BarChart3 className="h-5 w-5" />
+        <Card className="hover:shadow-md transition-all">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0]">
+                <BarChart3 className="h-4 w-4" />
               </div>
-              <div>
-                <h3 className="font-normal text-[#001141]">Analyse starten</h3>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  Wählen Sie ein Modul und starten Sie eine neue Analyse
-                </p>
-              </div>
+              <h3 className="font-normal text-[#001141] text-sm">Berichte & Export</h3>
             </div>
+            {simList.length === 0 ? (
+              <p className="text-xs text-slate-400 py-2 text-center">Noch keine abgeschlossenen Simulationen</p>
+            ) : (
+              <div className="space-y-2">
+                {simList.map((sim) => (
+                  <div key={sim.run_id} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-600 truncate flex-1">{sim.project_name}</span>
+                    <div className="flex gap-1 shrink-0">
+                      <a
+                        href={`/api/exports/results/${sim.run_id}/csv`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e6f3fc] hover:text-[#0079C0] hover:border-[#0079C0] transition-colors"
+                      >
+                        CSV
+                      </a>
+                      <a
+                        href={`/api/exports/results/${sim.run_id}/xlsx`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] px-2 py-0.5 rounded border border-slate-200 text-slate-500 hover:bg-[#e8f5f0] hover:text-[#043F2E] hover:border-[#043F2E] transition-colors"
+                      >
+                        XLSX
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -28,6 +28,27 @@ router.get('/dashboard-stats', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/projects/recent-simulations - Last completed simulations with project info
+router.get('/recent-simulations', async (req: Request, res: Response) => {
+  try {
+    const result = await query<{
+      run_id: string; project_id: string; project_name: string;
+      wizard_module: string; completed_at: string;
+    }>(`
+      SELECT sr.id as run_id, p.id as project_id, p.name as project_name,
+             p.wizard_module, sr.completed_at
+      FROM simulation_runs sr
+      JOIN projects p ON p.id = sr.project_id
+      WHERE sr.status = 'completed'
+      ORDER BY sr.completed_at DESC
+      LIMIT 5
+    `);
+    res.json({ data: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch recent simulations' });
+  }
+});
+
 // GET /api/projects - List all projects
 router.get('/', async (req: Request, res: Response) => {
   try {

@@ -52,6 +52,21 @@ export function useDashboardStats() {
   });
 }
 
+export interface RecentSimulation {
+  run_id: string;
+  project_id: string;
+  project_name: string;
+  wizard_module: string;
+  completed_at: string;
+}
+
+export function useRecentSimulations() {
+  return useQuery({
+    queryKey: ['recent-simulations'],
+    queryFn: () => apiFetch<RecentSimulation[]>('/projects/recent-simulations'),
+  });
+}
+
 export function useProject(id: string | undefined) {
   return useQuery({
     queryKey: ['projects', id],
