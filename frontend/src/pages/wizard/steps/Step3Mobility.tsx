@@ -574,7 +574,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                         <SelectContent>
                           {vehicleTypes.map((vt, vi) => (
                             <SelectItem key={vi} value={String(vi)}>
-                              {getSegmentLabel(vt.segment)} ({vt.count}×)
+                              Fahrzeugtyp {vi + 1}
                             </SelectItem>
                           ))}
                         </SelectContent>
