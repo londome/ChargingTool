@@ -120,7 +120,7 @@ export default function Dashboard() {
 
       {/* Flottenanalysen */}
       <div>
-        <h2 className="text-lg font-normal text-[#001141] mb-3">Meine Flottenanalysen</h2>
+        <h2 className="text-lg font-normal text-[#001141] mb-3">Simulationsübersicht</h2>
 
         {isLoading ? (
           <div className="space-y-3">
