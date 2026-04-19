@@ -387,7 +387,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
       <div className="p-6 border-b border-slate-100">
         <h2 className="text-lg font-normal text-[#001141]">Mobilitätsprofil</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Erfassen Sie das Mobilitätsprofil Ihrer Flotte — manuell, per CSV-Upload oder als aggregiertes Flottenprofil.
+          Erfassen Sie das Mobilitätsprofil Ihrer <strong>aktuellen Verbrennungsflotte</strong> — also der Fahrzeuge, die elektrifiziert werden sollen.
         </p>
       </div>
 
@@ -442,9 +442,12 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
             {/* Vehicle types section */}
             <div className="border rounded-lg p-4 bg-slate-50 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-normal text-[#001141] flex items-center gap-2">
-                  <Truck className="h-4 w-4" /> Fahrzeugtypen
-                </h4>
+                <div>
+                  <h4 className="text-sm font-normal text-[#001141] flex items-center gap-2">
+                    <Truck className="h-4 w-4" /> Fahrzeugtypen
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Definieren Sie die Fahrzeugkategorien Ihrer aktuellen Flotte — z.B. Segment, Kraftstoff, Anzahl und Verbrauch.</p>
+                </div>
                 <Button variant="outline" size="sm" onClick={addVehicleType} className="h-7 text-xs gap-1">
                   <Plus className="h-3 w-3" /> Fahrzeugtyp hinzufügen
                 </Button>
@@ -508,17 +511,10 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
 
             {/* Tours section */}
             <div className="space-y-3">
-              <h4 className="text-sm font-normal text-[#001141]">Touren</h4>
-              {isReichweitenMode && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-[#e6f3fc] rounded border border-[#0079C0]/20 text-xs text-[#0079C0]">
-                  <span className="shrink-0 mt-0.5">ℹ️</span>
-                  <span>
-                    <strong>Distanz (km)</strong> = Strecke pro einzelner Fahrt.
-                    Für die Machbarkeitsanalyse wird genau diese Strecke simuliert — <em>nicht</em> die Jahresleistung.
-                    Trips/Jahr werden nur für die Jahres-Energiebilanz verwendet.
-                  </span>
-                </div>
-              )}
+              <div>
+                <h4 className="text-sm font-normal text-[#001141]">Touren</h4>
+                <p className="text-xs text-slate-400 mt-0.5">Eine Tour entspricht einer typischen Tagesroute eines Fahrzeugs — mit Abfahrtszeit, Ankunftszeit und zurückgelegter Distanz.</p>
+              </div>
               {manualRoutes.map((route, ri) => (
                 <div key={ri} className="border rounded-lg p-3 bg-white">
                   <div className="flex items-center justify-between mb-2">
