@@ -15,21 +15,21 @@ interface Module {
 const MODULES: Module[] = [
   {
     id: 'reichweiten',
-    title: 'Reichweiten Simulator',
+    title: 'Reichweite',
     description: 'Analysiere Reichweite und Machbarkeit der Elektrifizierung deiner Flotte.',
     icon: Gauge,
     enabled: true,
   },
   {
     id: 'ladeprozess',
-    title: 'Ladeprozess Simulator',
+    title: 'Ladeprozess',
     description: 'Vollständige Simulation des Ladeprozesses inklusive TCO, CO₂ und Infrastruktur.',
     icon: Zap,
     enabled: true,
   },
   {
     id: 'ladeprozess_optimierung',
-    title: 'Ladeoptimierung Simulator (Unidirektional)',
+    title: 'Ladeprozessoptimierung (V1X)',
     description: 'LP-basierte Ladeoptimierung mit Day-Ahead Preisen',
     icon: Zap,
     enabled: true,
@@ -37,7 +37,7 @@ const MODULES: Module[] = [
   },
   {
     id: 'ladeprozess_bidirektional',
-    title: 'Ladeoptimierung Simulator (Bidirektional)',
+    title: 'Ladeprozessoptimierung (V2X)',
     description: 'MILP-basierte Energiearbitrage: Lade bei niedrigen Preisen, entlade bei hohen Preisen. Maximiere Einnahmen durch Day-Ahead Preissignale.',
     icon: BatteryCharging,
     enabled: true,
