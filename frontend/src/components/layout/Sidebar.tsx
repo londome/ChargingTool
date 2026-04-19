@@ -205,8 +205,8 @@ export default function Sidebar() {
         </div>
         {!sidebarCollapsed && (
           <div>
-            <p className="text-sm font-light text-white leading-tight">FleetElect</p>
-            <p className="text-xs text-white/60 leading-tight">Elektrifizierung</p>
+            <p className="text-sm font-light text-white leading-tight">FleetIQ</p>
+            <p className="text-xs text-white/60 leading-tight">by iE2S</p>
           </div>
         )}
       </div>

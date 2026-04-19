@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProjects, useDeleteProject, useDashboardStats } from '@/lib/api';
+import { useProjects, useDeleteProject, useDashboardStats, useEVModels } from '@/lib/api';
 import { useProjectStore } from '@/store/projectStore';
 import { formatDate } from '@/lib/utils';
 import KPICard from '@/components/shared/KPICard';
@@ -13,6 +13,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { data: projects, isLoading } = useProjects();
   const { data: stats } = useDashboardStats();
+  const { data: evModels } = useEVModels();
+  const evModelCount = evModels?.length ?? 0;
   const { setActiveProject, activeProject } = useProjectStore();
   const deleteProject = useDeleteProject();
 
@@ -117,23 +119,26 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-normal text-[#001141]">EV-Modelle erkunden</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  Bibliothek mit 17 aktuellen Fahrzeugmodellen
+                  {evModelCount > 0 ? `Bibliothek mit ${evModelCount} aktuellen Fahrzeugmodellen` : 'EV-Fahrzeugbibliothek laden…'}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:border-purple-300 hover:shadow-md transition-all">
+        <Card
+          className="cursor-pointer hover:border-[#0079C0] hover:shadow-md transition-all group"
+          onClick={() => navigate('/projekte/neu')}
+        >
           <CardContent className="pt-6 pb-4">
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
+              <div className="p-2 rounded bg-[#e6f3fc] text-[#0079C0] group-hover:bg-[#cce6f8] transition-colors">
                 <BarChart3 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-normal text-[#001141]">Berichte</h3>
+                <h3 className="font-normal text-[#001141]">Analyse starten</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  Exportieren Sie Analysen als XLSX oder CSV
+                  Wählen Sie ein Modul und starten Sie eine neue Analyse
                 </p>
               </div>
             </div>
@@ -235,15 +240,29 @@ export default function Dashboard() {
 
       {/* Info banner */}
       <Card className="border-[#0079C0] bg-[#e6f3fc]">
-        <CardContent className="py-4 px-5">
+        <CardContent className="py-5 px-5">
           <div className="flex items-start gap-3">
             <Zap className="h-5 w-5 text-[#0079C0] mt-0.5 shrink-0" />
-            <div>
-              <h4 className="font-normal text-[#001141] text-sm">Flottenelektrifizierung – Schritt für Schritt</h4>
-              <p className="text-[#0079C0] text-sm mt-0.5">
-                Erstellen Sie ein Projekt, erfassen Sie Ihre Flottenfahrzeuge, laden Sie Tourdaten hoch,
-                konfigurieren Sie Szenarien und starten Sie die Simulation für vollständige TCO- und CO₂-Analysen.
-              </p>
+            <div className="space-y-2">
+              <h4 className="font-normal text-[#001141]">Was kann FleetIQ?</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
+                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
+                  <p className="text-xs font-medium text-[#001141]">🚛 Flottenelektrifizierung</p>
+                  <p className="text-xs text-slate-500 mt-1">Analysieren Sie, welche Fahrzeuge Ihrer Flotte durch EVs ersetzt werden können – mit TCO- und CO₂-Vergleich.</p>
+                </div>
+                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
+                  <p className="text-xs font-medium text-[#001141]">📍 Reichweiten-Simulator</p>
+                  <p className="text-xs text-slate-500 mt-1">Simulieren Sie die Reichweite unter realen Bedingungen: Temperatur, Beladung, Fahrprofil und HVAC.</p>
+                </div>
+                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
+                  <p className="text-xs font-medium text-[#001141]">⚡ Ladeoptimierung</p>
+                  <p className="text-xs text-slate-500 mt-1">Optimieren Sie den Ladeprozess Ihrer Flotte basierend auf Strompreisen und Netzanschlussleistung.</p>
+                </div>
+                <div className="bg-white rounded p-3 border border-[#BAE6FF]">
+                  <p className="text-xs font-medium text-[#001141]">🔁 Bidirektionales Laden</p>
+                  <p className="text-xs text-slate-500 mt-1">Nutzen Sie V2G-Arbitrage: Strom günstig laden, teuer zurückspeisen – und Ladekosten senken.</p>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
