@@ -74,11 +74,13 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   const results = latestRun?.results;
-  const selectedEVResult = results
+  const allEVResults = results
+    ? [...(results.selected_ev_results ?? []), ...(results.recommended_ev_results ?? [])]
+    : [];
+  const selectedEVResult = allEVResults.length > 0
     ? (selectedIds.length > 0
-        ? results.ev_results.find(r => selectedIds.includes(r.ev_model_id))
-        : null)
-      ?? results.ev_results[0]
+        ? allEVResults.find(r => selectedIds.includes(r.ev_model_id))
+        : null) ?? allEVResults[0]
     : null;
 
   // Transition running → results via effect (never during render)
@@ -89,7 +91,7 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
   }, [phase, status]);
 
   const feasiblePct = selectedEVResult?.summary.feasible_pct ?? 0;
-  const feasibleCount = selectedEVResult?.summary.feasible_routes ?? 0;
+  const feasibleCount = selectedEVResult?.summary.feasible ?? 0;
   const totalCount = selectedEVResult?.summary.total_routes ?? 0;
   const infeasibleCount = totalCount - feasibleCount;
 
@@ -295,7 +297,7 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
                     <div key={i} className="flex items-center justify-between text-xs py-1.5 px-3 rounded border border-slate-100 bg-slate-50">
                       <span className="text-slate-600 font-medium">{r.route_id}</span>
                       <span className="text-slate-500">{r.distance_km} km</span>
-                      {r.feasibility_status === 'feasible' ? (
+                      {r.feasibility === 'feasible' ? (
                         <span className="flex items-center gap-1 text-[#043F2E]">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Elektrifizierbar
                         </span>
