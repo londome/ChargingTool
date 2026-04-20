@@ -305,7 +305,7 @@ export default function ReichweitenResults() {
         <div className="flex items-center gap-2 shrink-0 print-hide">
           <Button
             variant="outline"
-            onClick={() => navigate(-1)}
+            onClick={() => projectId ? navigate(`/projekte/${projectId}/wizard`) : navigate(-1)}
             className="flex items-center gap-2"
           >
             ← Zurück
