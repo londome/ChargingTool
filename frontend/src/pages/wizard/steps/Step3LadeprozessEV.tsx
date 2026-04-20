@@ -32,8 +32,9 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>(wizard.step5SelectedEVIds ?? []);
   const [filterSegment, setFilterSegment] = useState<string>('all');
   const [filterManufacturer, setFilterManufacturer] = useState('');
-  const [phase, setPhase] = useState<Phase>('select');
-  const [runId, setRunId] = useState<string | null>(wizard.ladeprozessReichweitenRunId ?? null);
+  const existingRunId = wizard.ladeprozessReichweitenRunId ?? null;
+  const [phase, setPhase] = useState<Phase>(existingRunId ? 'results' : 'select');
+  const [runId, setRunId] = useState<string | null>(existingRunId);
 
   // Poll results when we have a run ID
   const { data: latestRun } = useReichweitenLatest(
