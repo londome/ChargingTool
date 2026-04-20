@@ -37,9 +37,10 @@ export default function Step1ProjectContext() {
     defaultValues: wizard.step1,
   });
 
-  // Pre-fill form fields from the selected source project
+  // Pre-fill all form fields from the selected source project
   useEffect(() => {
     if (reuseEnabled && sourceProject) {
+      setValue('name', sourceProject.name ?? '');
       setValue('country', sourceProject.country ?? 'DE');
       setValue('currency', sourceProject.currency ?? 'EUR');
       setValue('fleet_type', sourceProject.fleet_type ?? '');
@@ -175,7 +176,7 @@ export default function Step1ProjectContext() {
           <Input
             id="name"
             {...register('name')}
-            placeholder={isReusing && sourceProject ? `z.B. ${sourceProject.name} – Ladeprozess` : 'z.B. Lieferwagen Depot Nord'}
+            placeholder="z.B. Lieferwagen Depot Nord"
           />
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
