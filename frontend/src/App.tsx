@@ -5,7 +5,7 @@ import ProjectWizard from './pages/wizard/ProjectWizard';
 import TourUpload from './pages/upload/TourUpload';
 import FleetResults from './pages/results/FleetResults';
 import TourResults from './pages/results/TourResults';
-import InfrastructureResults from './pages/results/InfrastructureResults';
+import LadevorgangResults from './pages/results/LadevorgangResults';
 import ReichweitenResults from './pages/results/ReichweitenResults';
 import OptimizationResults from './pages/results/OptimizationResults';
 import ArbitrageResults from './pages/results/ArbitrageResults';
@@ -26,7 +26,7 @@ export default function App() {
           <Route path="projekte/:projectId/upload" element={<TourUpload />} />
           <Route path="projekte/:projectId/ergebnisse" element={<FleetResults />} />
           <Route path="projekte/:projectId/ergebnisse/touren" element={<TourResults />} />
-          <Route path="projekte/:projectId/ergebnisse/infrastruktur" element={<InfrastructureResults />} />
+          <Route path="projekte/:projectId/ergebnisse/ladevorgang" element={<LadevorgangResults />} />
           <Route path="projekte/:projectId/ergebnisse/reichweiten" element={<ReichweitenResults />} />
           <Route path="projekte/:projectId/ergebnisse/optimierung" element={<OptimizationResults />} />
           <Route path="projekte/:projectId/ergebnisse/arbitrage" element={<ArbitrageResults />} />

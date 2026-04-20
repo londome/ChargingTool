@@ -1,7 +1,8 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Zap, Sun, Info, Upload, X, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
+import { useRoutes, useSaveWizardConfig } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,6 +93,75 @@ function buildDailyAverage(
   };
 }
 
+// ── BDEW standard load profiles ──────────────────────────────────────────────
+// Exact normalized shapes (0–1), 96 × 15-min slots, annual workday average.
+// Source: "Repräsentative Profile VDEW.xls" from official BDEW ZIP download
+// (bdew.de/energie/standardlastprofile-strom), processed as:
+//   avg_wt[i] = (Winter_Werktag[i] + Sommer_Werktag[i] + Übergangszeit_Werktag[i]) / 3
+//   shape[i]  = avg_wt[i] / max(avg_wt)
+
+const BDEW_PROFILES: {
+  id: string;
+  label: string;
+  description: string;
+  shape: number[]; // 96 normalized values (0–1), index 0 = 00:00–00:15
+}[] = [
+  {
+    id: 'G0',
+    label: 'G0 – Gewerbe allgemein',
+    description: 'Allgemeines Gewerbeprofil: Verbrauch tagsüber, gering nachts.',
+    shape: [0.3125,0.3001,0.2872,0.2753,0.2649,0.2564,0.2493,0.2433,0.2385,0.2348,0.2321,0.231,0.2308,0.2329,0.2382,0.2475,0.261,0.2766,0.2923,0.3045,0.3119,0.3159,0.3185,0.3225,0.3299,0.3415,0.3582,0.3811,0.4109,0.4506,0.5031,0.5714,0.656,0.747,0.832,0.8984,0.9371,0.9536,0.9565,0.9554,0.9565,0.9616,0.969,0.979,0.9894,0.9975,1.0,0.9929,0.9738,0.9448,0.9098,0.8719,0.8342,0.7999,0.7711,0.7507,0.7409,0.7408,0.7488,0.7634,0.7829,0.8037,0.8222,0.8344,0.8375,0.835,0.8305,0.8287,0.8314,0.8332,0.8269,0.8051,0.7628,0.7057,0.6418,0.5798,0.526,0.4821,0.4491,0.4268,0.4152,0.4106,0.4089,0.406,0.3987,0.3882,0.3771,0.3671,0.3603,0.3561,0.3534,0.3503,0.3463,0.3408,0.3335,0.324],
+  },
+  {
+    id: 'G1',
+    label: 'G1 – Gewerbe werktags 8–18 Uhr',
+    description: 'Büro-/Gewerbezeiten: starker Peak 8–18 Uhr, sehr gering außerhalb.',
+    shape: [0.0573,0.056,0.0548,0.0541,0.0537,0.0537,0.0539,0.0541,0.0543,0.0543,0.0543,0.0541,0.0537,0.0533,0.053,0.0525,0.0523,0.0525,0.054,0.0572,0.0594,0.0615,0.0631,0.0634,0.0746,0.0858,0.1037,0.1238,0.2253,0.3597,0.5075,0.6494,0.7692,0.8638,0.9331,0.9771,0.9971,1.0,0.9937,0.9864,0.9845,0.9864,0.9897,0.9911,0.9879,0.9794,0.9652,0.9447,0.9175,0.8832,0.8413,0.7916,0.7354,0.6818,0.6417,0.6261,0.6414,0.6765,0.7158,0.7437,0.7483,0.7322,0.7018,0.6633,0.6216,0.5768,0.5278,0.473,0.4128,0.3508,0.2924,0.2427,0.2055,0.1788,0.1595,0.1438,0.1293,0.1162,0.1048,0.0959,0.0898,0.0858,0.083,0.0805,0.0774,0.0739,0.0707,0.068,0.0661,0.0649,0.0641,0.0634,0.0625,0.0613,0.0601,0.0587],
+  },
+  {
+    id: 'G3',
+    label: 'G3 – Gewerbe durchlaufend',
+    description: 'Kontinuierlicher Betrieb 24/7, z.B. Kühllogistik, Produktion.',
+    shape: [0.6418,0.6394,0.6385,0.6389,0.6396,0.64,0.6403,0.6387,0.6355,0.6308,0.6247,0.6184,0.6111,0.6042,0.5969,0.5897,0.5827,0.5775,0.5755,0.5773,0.5845,0.5965,0.6121,0.6306,0.6511,0.6707,0.6872,0.6976,0.7007,0.7028,0.7114,0.7344,0.7761,0.8283,0.8799,0.9199,0.9402,0.9454,0.9431,0.9418,0.947,0.9576,0.9702,0.9813,0.9887,0.9926,0.9948,0.9964,0.9984,1.0,0.9984,0.9923,0.9804,0.9641,0.9461,0.9282,0.9127,0.9009,0.8939,0.8926,0.8978,0.907,0.9172,0.9255,0.9294,0.9307,0.9312,0.9336,0.9393,0.9474,0.9564,0.965,0.9716,0.9745,0.9722,0.9637,0.9472,0.9251,0.9,0.8747,0.8517,0.8307,0.8113,0.793,0.7754,0.759,0.7439,0.7303,0.7183,0.7073,0.6971,0.6865,0.6755,0.6646,0.6547,0.647],
+  },
+  {
+    id: 'G4',
+    label: 'G4 – Laden / Friseur',
+    description: 'Einzelhandel & Dienstleistung: Peak mittags und nachmittags.',
+    shape: [0.33,0.3247,0.3194,0.3148,0.3109,0.3077,0.3051,0.3032,0.3017,0.3006,0.2996,0.2988,0.298,0.2972,0.2965,0.2959,0.2952,0.2949,0.2957,0.2973,0.3004,0.3041,0.3077,0.3104,0.3121,0.3164,0.3279,0.3513,0.3895,0.4426,0.509,0.5874,0.6745,0.7629,0.8434,0.9066,0.9456,0.9657,0.9739,0.978,0.9832,0.9896,0.9958,0.9998,1.0,0.9972,0.9916,0.9838,0.9733,0.9577,0.9331,0.8964,0.8457,0.7893,0.7381,0.7025,0.69,0.7002,0.7281,0.771,0.8233,0.8782,0.9271,0.9619,0.9765,0.9777,0.9731,0.9721,0.9798,0.9909,0.9964,0.9882,0.959,0.9122,0.8528,0.7856,0.7155,0.6483,0.5895,0.5451,0.5181,0.5043,0.4965,0.4883,0.4742,0.4554,0.4343,0.4139,0.3958,0.3807,0.3683,0.3585,0.3509,0.3451,0.3401,0.3352],
+  },
+  {
+    id: 'L0',
+    label: 'L0 – Landwirtschaft allgemein',
+    description: 'Früher Morgen-Peak (Stallzeiten), zweiter Peak abends.',
+    shape: [0.3335,0.3188,0.3062,0.296,0.2879,0.2818,0.2772,0.2736,0.2711,0.2688,0.2669,0.265,0.2626,0.2602,0.258,0.2559,0.2548,0.2546,0.2558,0.2589,0.2645,0.2732,0.2858,0.3034,0.3267,0.3578,0.3995,0.4542,0.5228,0.6018,0.6858,0.7695,0.8471,0.9117,0.9546,0.9677,0.9466,0.8997,0.8395,0.7781,0.7264,0.6879,0.6642,0.6585,0.67,0.6891,0.7051,0.7058,0.6834,0.6446,0.5992,0.558,0.5283,0.5099,0.4995,0.4942,0.4911,0.4895,0.4888,0.4883,0.4879,0.4875,0.4875,0.4883,0.4901,0.4949,0.505,0.5224,0.549,0.5863,0.6351,0.6968,0.7706,0.8476,0.9177,0.9706,0.9981,1.0,0.9788,0.9366,0.8768,0.8069,0.7351,0.6703,0.6187,0.5792,0.5482,0.5224,0.4989,0.4765,0.4551,0.4335,0.4118,0.3904,0.3698,0.3508],
+  },
+  {
+    id: 'H0',
+    label: 'H0 – Haushalt',
+    description: 'Wohngebäude: Peak abends 19–21 Uhr, Morgenspitze 7–9 Uhr.',
+    shape: [0.4343,0.3886,0.3488,0.3166,0.2937,0.2785,0.2688,0.262,0.2566,0.2519,0.2482,0.245,0.2424,0.2409,0.2397,0.2403,0.2416,0.2446,0.2489,0.2544,0.2622,0.2767,0.3035,0.3479,0.4126,0.4894,0.5676,0.6366,0.6877,0.7228,0.7453,0.7597,0.7693,0.7745,0.776,0.7738,0.7683,0.7608,0.7516,0.7425,0.7344,0.7275,0.7228,0.7209,0.7222,0.7284,0.7402,0.7597,0.7863,0.8144,0.8369,0.847,0.8396,0.8186,0.7899,0.7597,0.7329,0.71,0.6896,0.6709,0.653,0.6371,0.6234,0.6131,0.6067,0.6056,0.6105,0.6225,0.6424,0.6694,0.7025,0.741,0.7835,0.8279,0.8724,0.9142,0.9513,0.9805,0.9979,1.0,0.9852,0.9588,0.9276,0.8986,0.877,0.8604,0.8446,0.8253,0.7991,0.7661,0.7271,0.6834,0.6358,0.5858,0.5346,0.4836],
+  },
+];
+
+/** Scales a normalized BDEW shape (0–1) to kW values using the peak grid connection */
+function bdewToProfile(shape: number[], peak_kw: number, max_grid_kw: number): LastgangProfile {
+  const intervals = shape.map((rel, i) => {
+    const hh = Math.floor(i / 4).toString().padStart(2, '0');
+    const mm = ((i % 4) * 15).toString().padStart(2, '0');
+    return { time: `${hh}:${mm}`, power_kw: Math.round(rel * peak_kw * 10) / 10 };
+  });
+  const powers = intervals.map(iv => iv.power_kw);
+  return {
+    intervals,
+    peak_kw: Math.max(...powers),
+    avg_kw: Math.round((powers.reduce((a, b) => a + b, 0) / powers.length) * 10) / 10,
+    resolution_min: 15,
+    rows_total: 96,
+    max_grid_connection_kw: max_grid_kw,
+  };
+}
+
 // ── SliderField ───────────────────────────────────────────────────────────────
 
 function SliderField({
@@ -138,6 +208,7 @@ function SliderField({
 
 export default function Step3Depot() {
   const { wizard, updateWizardStep3Depot, setWizardStep, lastgangProfile, setLastgangProfile } = useProjectStore();
+  const saveWizardConfig = useSaveWizardConfig();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleLastgangFile = useCallback((file: File) => {
@@ -160,10 +231,35 @@ export default function Step3Depot() {
     reader.readAsText(file, 'UTF-8');
   }, [wizard.step3Depot?.max_grid_connection_kw, setLastgangProfile]);
 
-  // Total EVs from fleet definition (for "1 LP pro EV" option)
-  const totalEVs = wizard.step2Vehicles.reduce((sum, v) => sum + (v.count || 1), 0) || 10;
-  const [lpMode, setLpMode] = useState<'fixed' | 'per_ev'>('per_ev');
+  // Total EVs — set synchronously by Step3Mobility when user confirms mobility profile:
+  //   manual      → sum of vehicle_count per route
+  //   fleet_level → sum of vehicle_count per Fahrzeugtyp
+  //   upload      → refined async below via unique vehicle_ids
+  //   reuse path  → refined async below via route vehicle_counts
+  const { data: routesData, isLoading: routesLoading } = useRoutes(wizard.projectId ?? undefined);
+  const totalEVs = (() => {
+    const stored = wizard.step3TotalVehicles;
+    // Always derive from routes when reusing a Reichweiten project
+    if (!wizard.reuseReichweitenProjectId) {
+      if (wizard.step3MobilityMode === 'upload') {
+        const routes = routesData?.data ?? [];
+        if (routes.length) {
+          return new Set(routes.map((r: { vehicle_id?: string | null }) => r.vehicle_id).filter(Boolean)).size || routes.length;
+        }
+        return routesLoading ? 0 : (stored || 1);
+      }
+      if (stored > 0) return stored;
+    }
+    // Reuse path OR stored=0: sum vehicle_count from DB routes (wait for load)
+    if (routesLoading) return 0;
+    const routes = routesData?.data ?? [];
+    const fromRoutes = routes.reduce((sum: number, r: { vehicle_count?: number | null }) => sum + (r.vehicle_count ?? 1), 0);
+    // Fallback chain: DB routes → wizard.step3TotalVehicles (set from copy result) → 1
+    return fromRoutes || stored || 1;
+  })();
   const [lastgangError, setLastgangError] = useState<string | null>(null);
+  const [selectedBdewId, setSelectedBdewId] = useState<string | null>(null);
+  const [bdewPeakKw, setBdewPeakKw] = useState<number>(50); // user-defined peak for BDEW scaling
 
   const { handleSubmit, control, watch, setValue } = useForm<WizardStep3DepotData>({
     defaultValues: wizard.step3Depot ?? {
@@ -178,6 +274,12 @@ export default function Step3Depot() {
 
   const onSubmit = (data: WizardStep3DepotData) => {
     updateWizardStep3Depot(data);
+    if (wizard.projectId && !wizard.projectId.startsWith('local_')) {
+      saveWizardConfig.mutate({
+        projectId: wizard.projectId,
+        config: { ...(wizard as any).wizard_config, step3Depot: data },
+      });
+    }
     setWizardStep(5);
   };
 
@@ -230,48 +332,6 @@ export default function Step3Depot() {
               />
             </div>
 
-            {/* Anzahl Ladepunkte */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <Label className="text-sm">Anzahl Ladepunkte</Label>
-                <InfoTip text="Geplante Anzahl Ladepunkte im Depot. Weniger Ladepunkte als EVs erzeugen Warteschlangen — wird in zukünftigen Versionen in der Optimierung berücksichtigt." />
-              </div>
-              {/* Mode toggle */}
-              <div className="flex gap-2 mb-2">
-                {[
-                  { id: 'per_ev', label: '1 LP pro EV', badge: `${totalEVs} LP` },
-                  { id: 'fixed', label: 'Feste Anzahl', badge: 'V1.1' },
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => {
-                      setLpMode(opt.id as 'fixed' | 'per_ev');
-                      if (opt.id === 'per_ev') setValue('num_charging_points', totalEVs);
-                    }}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
-                      lpMode === opt.id
-                        ? 'bg-[#0079C0] text-white border-[#0079C0]'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    {opt.label}
-                    <span className={`text-[10px] opacity-70`}>{opt.badge}</span>
-                  </button>
-                ))}
-              </div>
-              {lpMode === 'per_ev' ? (
-                <div className="flex items-center gap-2 p-2.5 bg-[#e6f3fc] rounded border border-[#0079C0]/20 text-xs text-[#001141]">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#0079C0] shrink-0" />
-                  <span><strong>{totalEVs} Ladepunkte</strong> — ein LP pro EV aus dem Mobilitätsprofil.</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 p-2.5 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  <span>Weniger Ladepunkte als EVs erfordert Warteschlangenoptimierung — folgt in V1.1.</span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -294,65 +354,128 @@ export default function Step3Depot() {
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-slate-400" />
             <span className="text-sm font-medium text-[#001141]">Depot-Lastprofil</span>
-            <span className="text-xs text-slate-400">(optional)</span>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 uppercase tracking-wide">Optional</span>
             <InfoTip text="Bestehendes Lastprofil des Depots (CSV, 15-min-Auflösung). Wird in den Ergebnissen mit der EV-Ladelast überlagert. Trennzeichen , oder ; — Zeitraum beliebig, Tagesdurchschnitt wird berechnet. Einbindung in Ladeoptimierung folgt in V1.1." />
             <div className="flex-1 h-px bg-slate-100 ml-1" />
           </div>
-
-          {/* Format info — same style as Step3Mobility CSV tab */}
-          <div className="rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
-
-            {/* Pflichtfelder */}
-            <div className="px-4 py-3">
-              <p className="text-xs font-medium text-[#001141] mb-2">Pflichtfelder</p>
-              <div className="space-y-1.5">
-                {[
-                  { field: 'Timestamp', desc: 'Datum und Uhrzeit des Messintervalls', ex: '2024-01-15 07:30' },
-                  { field: 'Leistung_kW', desc: 'Gemessene Leistung am Netzanschluss', ex: '48.5' },
-                ].map(({ field, desc, ex }) => (
-                  <div key={field} className="flex items-center gap-3">
-                    <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-[#0079C0] font-mono w-40 shrink-0">{field}</code>
-                    <span className="text-xs text-slate-600 flex-1">{desc}</span>
-                    <span className="text-xs text-slate-400 font-mono shrink-0">z.B. {ex}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Download */}
-            <div className="px-4 py-3 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Vorlage herunterladen und befüllen</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const rows = ['Timestamp;Leistung_kW'];
-                  const base = new Date('2024-01-15');
-                  for (let i = 0; i < 96; i++) {
-                    const h = Math.floor(i / 4);
-                    const m = (i % 4) * 15;
-                    const ts = `${base.toISOString().slice(0,10)} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                    const kw = h >= 7 && h < 20 ? 40 + Math.round(Math.sin(i / 8) * 15 + 15) : 12 + Math.round(Math.random() * 8);
-                    rows.push(`${ts};${kw}`);
-                  }
-                  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-                  const a = document.createElement('a');
-                  a.href = URL.createObjectURL(blob);
-                  a.download = 'lastprofil_vorlage.csv';
-                  a.click();
-                  URL.revokeObjectURL(a.href);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[#0079C0] text-[#0079C0] rounded hover:bg-[#e6f3fc] transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" /> Vorlage (CSV)
-              </button>
-            </div>
-          </div>
-
 
           {lastgangError && (
             <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               {lastgangError}
+            </div>
+          )}
+
+          {/* ── BDEW standard profiles ── */}
+          {!lastgangProfile && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                BDEW-Standardlastprofil auswählen
+              </p>
+
+              {/* Peak scaling input */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded border border-slate-200">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-[#001141] block mb-1">
+                    Maximale Bestandslast
+                    <InfoTip text="Gemessene oder geschätzte Spitzenlast des Depots ohne EV-Laden. Das BDEW-Profil wird auf diesen Wert skaliert. Erkennbar z.B. aus dem Zählerprotokoll oder der Jahreshöchstlast im Stromliefervertrag." />
+                  </label>
+                  <p className="text-[11px] text-slate-500">Das Profil wird auf diesen Spitzenwert skaliert</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <input
+                    type="number"
+                    className="h-8 text-sm text-right w-24 rounded border border-slate-200 px-2 focus:outline-none focus:ring-1 focus:ring-[#0079C0]"
+                    value={bdewPeakKw}
+                    onChange={e => setBdewPeakKw(parseFloat(e.target.value) || 1)}
+                  />
+                  <span className="text-xs text-slate-400">kW</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {BDEW_PROFILES.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      const gridKw = watch('max_grid_connection_kw') ?? 100;
+                      const profile = bdewToProfile(p.shape, bdewPeakKw, gridKw);
+                      setLastgangProfile(profile);
+                      setLastgangError(null);
+                      setSelectedBdewId(p.id);
+                    }}
+                    className="text-left p-3 rounded border border-slate-200 hover:border-[#0079C0] hover:bg-[#f0f8ff] transition-colors group"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-[#001141] group-hover:text-[#0079C0]">{p.id}</span>
+                      {/* Mini sparkline */}
+                      <svg width="48" height="18" viewBox="0 0 48 18" className="text-[#0079C0]">
+                        <polyline
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          points={p.shape
+                            .filter((_, i) => i % 4 === 0) // downsample to 24 points
+                            .map((v, i) => `${(i / 23) * 47},${(1 - v) * 16 + 1}`)
+                            .join(' ')}
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-snug">{p.description}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 my-1">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400">oder eigenes Profil hochladen</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              {/* Format info */}
+              <div className="rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
+                <div className="px-4 py-3">
+                  <p className="text-xs font-medium text-[#001141] mb-2">Pflichtfelder</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { field: 'Timestamp', desc: 'Datum und Uhrzeit des Messintervalls', ex: '2024-01-15 07:30' },
+                      { field: 'Leistung_kW', desc: 'Gemessene Leistung am Netzanschluss', ex: '48.5' },
+                    ].map(({ field, desc, ex }) => (
+                      <div key={field} className="flex items-center gap-3">
+                        <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-[#0079C0] font-mono w-40 shrink-0">{field}</code>
+                        <span className="text-xs text-slate-600 flex-1">{desc}</span>
+                        <span className="text-xs text-slate-400 font-mono shrink-0">z.B. {ex}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Vorlage herunterladen und befüllen</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const G0_SHAPE = [0.3125,0.3001,0.2872,0.2753,0.2649,0.2564,0.2493,0.2433,0.2385,0.2348,0.2321,0.231,0.2308,0.2329,0.2382,0.2475,0.261,0.2766,0.2923,0.3045,0.3119,0.3159,0.3185,0.3225,0.3299,0.3415,0.3582,0.3811,0.4109,0.4506,0.5031,0.5714,0.656,0.747,0.832,0.8984,0.9371,0.9536,0.9565,0.9554,0.9565,0.9616,0.969,0.979,0.9894,0.9975,1.0,0.9929,0.9738,0.9448,0.9098,0.8719,0.8342,0.7999,0.7711,0.7507,0.7409,0.7408,0.7488,0.7634,0.7829,0.8037,0.8222,0.8344,0.8375,0.835,0.8305,0.8287,0.8314,0.8332,0.8269,0.8051,0.7628,0.7057,0.6418,0.5798,0.526,0.4821,0.4491,0.4268,0.4152,0.4106,0.4089,0.406,0.3987,0.3882,0.3771,0.3671,0.3603,0.3561,0.3534,0.3503,0.3463,0.3408,0.3335,0.324];
+                      const rows = ['Timestamp;Leistung_kW'];
+                      const base = '2024-01-15';
+                      for (let i = 0; i < 96; i++) {
+                        const h = String(Math.floor(i / 4)).padStart(2, '0');
+                        const m = String((i % 4) * 15).padStart(2, '0');
+                        const kw = Math.round(G0_SHAPE[i] * 60 * 10) / 10;
+                        rows.push(`${base} ${h}:${m};${kw}`);
+                      }
+                      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = 'lastprofil_vorlage.csv';
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[#0079C0] text-[#0079C0] rounded hover:bg-[#e6f3fc] transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Vorlage (CSV)
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -383,13 +506,17 @@ export default function Step3Depot() {
                     ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                     : <CheckCircle2 className="h-4 w-4 text-[#043F2E] shrink-0" />}
                   <div>
-                    <p className="text-sm font-medium text-[#001141]">Lastprofil geladen</p>
+                    <p className="text-sm font-medium text-[#001141]">
+                      {selectedBdewId
+                        ? `BDEW ${selectedBdewId} – ${BDEW_PROFILES.find(p => p.id === selectedBdewId)?.label.split('–')[1]?.trim() ?? selectedBdewId}`
+                        : 'Lastprofil geladen'}
+                    </p>
                     <p className="text-xs text-slate-500">
                       {lastgangProfile.intervals.length} Intervalle · {lastgangProfile.resolution_min} min · {lastgangProfile.rows_total.toLocaleString('de-DE')} Zeilen
                     </p>
                   </div>
                 </div>
-                <button type="button" onClick={() => setLastgangProfile(null)} className="text-slate-400 hover:text-slate-600 ml-2">
+                <button type="button" onClick={() => { setLastgangProfile(null); setSelectedBdewId(null); }} className="text-slate-400 hover:text-slate-600 ml-2">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -421,7 +548,6 @@ export default function Step3Depot() {
             {[
               ['Anschlussleistung', watch('max_grid_connection_kw') + ' kW'],
               ['Spannungsebene', watch('voltage_level')],
-              ['Ladepunkte', watch('num_charging_points') + ' LP'],
               ['PV-Anlage', watch('pv_capacity_kw') + ' kWp'],
             ].map(([label, value]) => (
               <div key={label}>

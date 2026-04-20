@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Edit, BarChart3, Plus, Trash2, CheckCircle, Loader2, Clock, Truck, Thermometer, Wind, ChevronDown, ChevronUp, Gauge } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
-import { useAddManualRoutes, useClearRoutes, uploadRoutes, useCreateFleet } from '@/lib/api';
+import { useAddManualRoutes, useClearRoutes, uploadRoutes, useCreateFleet, useFleet, useRoutes } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -114,7 +114,7 @@ interface Step3MobilityProps {
 }
 
 export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityProps = {}) {
-  const { wizard, updateWizardStep2, setWizardFleetId, setWizardMobilityMode, setWizardStep } = useProjectStore();
+  const { wizard, updateWizardStep2, setWizardFleetId, setWizardMobilityMode, setWizardStep, setStep3TotalVehicles } = useProjectStore();
   const addRoutes = useAddManualRoutes();
   const clearRoutes = useClearRoutes();
   const createFleet = useCreateFleet();
@@ -148,6 +148,60 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
   // ── CSV tab state ────────────────────────────────────────────────────────
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
   const [uploadResult, setUploadResult] = useState<{ imported: number; errors: string[] } | null>(null);
+
+  // ── Pre-populate from DB when opening an existing project ────────────────
+  const existingProjectId = wizard.projectId && !wizard.projectId.startsWith('local_') ? wizard.projectId : undefined;
+  const { data: fleetData } = useFleet(existingProjectId);
+  const { data: routesData } = useRoutes(existingProjectId);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (hydrated) return;
+    const fleet = fleetData?.[0];
+    const routes = routesData?.data;
+    if (!fleet || !routes) return;
+
+    // Build vehicleTypes from fleet vehicles
+    const vehicles: VehicleType[] = (fleet.vehicles ?? []).map((v: any) => ({
+      segment: v.segment ?? VehicleSegment.LARGE_VAN,
+      fuel_type: v.fuel_type ?? FuelType.DIESEL,
+      count: v.count ?? 1,
+      consumption_l_100km: Number(v.consumption_l_100km) || 9.5,
+      annual_km: Number(v.annual_km) || 30000,
+      payload_kg: Number(v.payload_kg) || 900,
+      capex: Number(v.capex) || 55000,
+      maintenance_cost_annual: Number(v.maintenance_cost_annual) || 4000,
+    }));
+    if (vehicles.length > 0) setVehicleTypes(vehicles);
+
+    // Build vehicleId → index map
+    const vehicleIdToIdx = new Map<string, number>();
+    (fleet.vehicles ?? []).forEach((v: any, i: number) => vehicleIdToIdx.set(v.id, i));
+
+    // Build manualRoutes from DB routes (only for manual/source_type=manual)
+    const manual = routes.filter((r: any) => !r.source_type || r.source_type === 'manual');
+    if (manual.length > 0) {
+      const mapped: ManualRoute[] = manual.map((r: any) => ({
+        route_id: r.route_id ?? '',
+        distance_km: Number(r.distance_km) || 0,
+        stops: Number(r.stops) || 0,
+        departure_time: r.start_time ?? '06:00',
+        arrival_time: r.end_time ?? '18:00',
+        avg_speed_kmh: Number(r.avg_speed_kmh) || 55,
+        vehicle_count: Number(r.vehicle_count) || 1,
+        vehicle_type_idx: vehicleIdToIdx.get(r.vehicle_id) ?? 0,
+        trips_per_year: Number(r.trips_per_year) || 250,
+        sim_temperature_c: Number(r.sim_temperature_c) ?? 15,
+        sim_hvac_on: r.sim_hvac_on ?? false,
+        sim_city_share: Number(r.sim_city_share) ?? 0.5,
+        sim_rural_share: Number(r.sim_rural_share) ?? 0.3,
+        sim_hwy_share: Number(r.sim_hwy_share) ?? 0.2,
+      }));
+      setManualRoutes(mapped);
+    }
+
+    setHydrated(true);
+  }, [fleetData, routesData, hydrated]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -241,7 +295,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
     if (projectId) {
       // Clear existing routes first (replace semantics — prevents accumulation across wizard runs)
       await clearRoutes.mutateAsync(projectId).catch(console.warn);
-      addRoutes.mutateAsync({
+      await addRoutes.mutateAsync({
         project_id: projectId,
         routes: manualRoutes.map(r => {
           const vt = vehicleTypes[r.vehicle_type_idx] ?? vehicleTypes[0];
@@ -268,6 +322,9 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
         }),
       }).catch(console.warn);
     }
+    // Store total vehicle count so Step3Depot can use it synchronously
+    // manual: sum of vehicle_count per route (how many vehicles make each trip)
+    setStep3TotalVehicles(manualRoutes.reduce((s, r) => s + (r.vehicle_count || 1), 0));
     onFinish ? onFinish() : setWizardStep(3);
   };
 
@@ -334,7 +391,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
     if (projectId) {
       // Clear existing routes first (replace semantics)
       await clearRoutes.mutateAsync(projectId).catch(console.warn);
-      addRoutes.mutateAsync({
+      await addRoutes.mutateAsync({
         project_id: projectId,
         routes: fleetEntries.map((e, i) => ({
           route_id: `FLEET_${i + 1}`,
@@ -352,6 +409,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
         })),
       }).catch(console.warn);
     }
+    // fleet_level: sum of vehicle_count per Fahrzeugtyp
+    setStep3TotalVehicles(fleetEntries.reduce((s, e) => s + (e.vehicle_count || 1), 0));
     onFinish ? onFinish() : setWizardStep(3);
   };
 
@@ -377,6 +436,9 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
 
   const handleUploadNext = () => {
     if (uploadState !== 'done' || !uploadResult || uploadResult.imported === 0) return;
+    // upload: vehicle count will be derived from unique vehicle_ids in DB (async in Step3Depot)
+    // Store imported count as upper bound; Step3Depot will refine via useRoutes
+    setStep3TotalVehicles(uploadResult.imported);
     onFinish ? onFinish() : setWizardStep(3);
   };
 

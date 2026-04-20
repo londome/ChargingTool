@@ -16,7 +16,7 @@ export default function Step1ProjectContext() {
   const {
     wizard, updateWizardStep1, setWizardStep,
     setWizardProjectId, setActiveProject,
-    setReuseReichweitenProjectId,
+    setReuseReichweitenProjectId, setStep3TotalVehicles, setWizardMobilityMode,
   } = useProjectStore();
 
   const createProject = useCreateProject();
@@ -70,26 +70,34 @@ export default function Step1ProjectContext() {
     };
     updateWizardStep1(mergedData);
 
-    let newProjectId: string | null = null;
-    try {
-      const project = await createProject.mutateAsync({
-        ...mergedData,
-        wizard_module: wizard.wizardModule,
-      });
-      newProjectId = project.id;
-      setWizardProjectId(project.id);
-      setActiveProject(project);
-    } catch {
-      const localId = `local_${Date.now()}`;
-      newProjectId = localId;
-      setWizardProjectId(localId);
+    let newProjectId: string | null = wizard.projectId ?? null;
+
+    // Skip creation if project already exists in DB
+    if (!newProjectId || newProjectId.startsWith('local_')) {
+      try {
+        const project = await createProject.mutateAsync({
+          ...mergedData,
+          wizard_module: wizard.wizardModule,
+        });
+        newProjectId = project.id;
+        setWizardProjectId(project.id);
+        setActiveProject(project);
+      } catch {
+        const localId = `local_${Date.now()}`;
+        newProjectId = localId;
+        setWizardProjectId(localId);
+      }
     }
 
     // Reuse: copy routes and jump to Step 4 (Depot)
     if (isLadeprozess && reuseEnabled && selectedReuseId && newProjectId && !newProjectId.startsWith('local_')) {
       setReuseReichweitenProjectId(selectedReuseId);
       try {
-        await copyRoutes.mutateAsync({ source_project_id: selectedReuseId, target_project_id: newProjectId });
+        const copyResult = await copyRoutes.mutateAsync({ source_project_id: selectedReuseId, target_project_id: newProjectId });
+        if (copyResult.total_vehicle_count > 0) {
+          setStep3TotalVehicles(copyResult.total_vehicle_count);
+          setWizardMobilityMode('fleet_level');
+        }
       } catch (e) {
         console.warn('Route copy failed, continuing without reuse', e);
       }

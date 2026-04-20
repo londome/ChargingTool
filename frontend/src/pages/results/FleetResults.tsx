@@ -15,7 +15,6 @@ import KPICard from '@/components/shared/KPICard';
 import CostComparisonChart from '@/components/charts/CostComparisonChart';
 import CO2ComparisonChart from '@/components/charts/CO2ComparisonChart';
 import TCOComparisonChart from '@/components/charts/TCOComparisonChart';
-import FeasibilityPieChart from '@/components/charts/FeasibilityPieChart';
 import { formatCurrency, formatCO2, formatPercent, formatPayback } from '@/lib/utils';
 import type { SimulationRun } from '@shared/types';
 
@@ -26,6 +25,7 @@ function ScenarioResultsPanel({ runId, projectId, scenarioId }: {
   scenarioId: string;
 }) {
   const runSimulation = useRunSimulation();
+  const { wizard } = useProjectStore();
   const { data: statusData } = useSimulationStatus(runId);
   const { data: results, isLoading } = useSimulationResults(
     statusData?.status === 'completed' ? runId : undefined
@@ -95,7 +95,7 @@ function ScenarioResultsPanel({ runId, projectId, scenarioId }: {
               value={formatCO2(summary.co2e_savings_t)}
               subtitle={`${formatPercent(summary.co2e_savings_pct)} weniger als ICE`}
               icon={Leaf} color="green"
-              tooltip="Jährliche CO₂e-Einsparung gegenüber Status quo"
+              tooltip={"CO₂e-Einsparung = ICE − EV (jährlich, je Fahrzeug × Fahrten/Jahr)\n\nICE: Verbrauch (L) × 2,65 kg CO₂e/L\nQuelle: IPCC / DEFRA (Diesel, Tank-to-Wheel)\n\nEV: Ladenergie (kWh) × Netz-Emissionsfaktor\nStandard: 0,380 kg CO₂e/kWh (UBA 2023, DE)\nKonfigurierbar je Szenario.\n\nNegatives Ergebnis = EV emittiert mehr (z.B. bei sehr kohlenstoffintensivem Strommix)."}
             />
             <KPICard
               title="TCO-Einsparung"
@@ -119,26 +119,16 @@ function ScenarioResultsPanel({ runId, projectId, scenarioId }: {
               iceFuelCost={summary.annual_fuel_cost_ice} evElecCost={summary.annual_electricity_cost_ev}
             />
             <CO2ComparisonChart iceT={summary.co2e_ice_t} evT={summary.co2e_ev_t} />
-            <TCOComparisonChart tcoIce={summary.tco_ice} tcoEv={summary.tco_ev} />
-            <FeasibilityPieChart
-              feasible={totalTours > 0 ? electrifiableTours : summary.electrifiable_count}
-              notFeasible={totalTours > 0 ? notFeasibleTours : Math.max(0, summary.total_vehicles - summary.electrifiable_count)}
-            />
           </div>
 
-          <div className="bg-white border rounded p-5">
-            <h3 className="font-normal text-[#001141] mb-3">Empfehlung Ladeinfrastruktur</h3>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-[#0079C0]">{summary.recommended_charger_count}</p>
-                <p className="text-xs text-slate-500">Ladepunkte gesamt</p>
-              </div>
-              <p className="text-sm text-slate-600">
-                Empfehlung basierend auf täglichem Energiebedarf und verfügbarem Ladefenster.
-                Detaillierte Infrastrukturplanung unter <strong>Infrastruktur-Ergebnisse</strong>.
-              </p>
-            </div>
-          </div>
+          <TCOComparisonChart
+            tcoIce={summary.tco_ice} tcoEv={summary.tco_ev}
+            opexIce={summary.opex_ice} opexEv={summary.opex_ev}
+            fuelCostIce={summary.annual_fuel_cost_ice}
+            elecCostEv={summary.annual_electricity_cost_ev}
+            infraCapex={results?.infrastructure?.infra_capex_total ?? 0}
+          />
+
         </>
       ) : (
         <Alert variant="info">
@@ -212,30 +202,28 @@ export default function FleetResults() {
   const { projectId } = useParams<{ projectId: string }>();
   const { activeRunId } = useProjectStore();
 
-  const { data: allRuns = [], isLoading: runsLoading } = useSimulationRuns(projectId);
+  const { data: allRuns = [], isLoading: runsLoading } = useSimulationRuns(activeRunId ? projectId : undefined);
   const completedRuns = (allRuns as any[]).filter(r => r.status === 'completed');
   const pendingRuns = (allRuns as any[]).filter(r => r.status === 'pending' || r.status === 'running');
 
-  // Pre-select the activeRunId tab, or first completed run
   const defaultTab = activeRunId && completedRuns.find(r => r.id === activeRunId)
     ? activeRunId
     : completedRuns[0]?.id ?? 'compare';
 
   const [selectedTab, setSelectedTab] = useState(defaultTab);
 
-  // Update selected tab if activeRunId changes (new simulation finished)
   useEffect(() => {
     if (activeRunId && completedRuns.find(r => r.id === activeRunId)) {
       setSelectedTab(activeRunId);
     }
   }, [activeRunId, completedRuns.length]);
 
-  if (!projectId) return null;
+  if (!projectId || !activeRunId) return null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-light text-[#001141]">Flottenergebnisse</h1>
+        <h1 className="text-2xl font-light text-[#001141]">Kosten- & Emissionsanalyse</h1>
         <p className="text-sm text-slate-500 mt-1">Elektrifizierungsanalyse nach Szenario</p>
       </div>
 
@@ -251,13 +239,7 @@ export default function FleetResults() {
             {pendingRuns.length} Simulation{pendingRuns.length > 1 ? 'en laufen' : ' läuft'}… Ergebnisse erscheinen automatisch.
           </AlertDescription>
         </Alert>
-      ) : completedRuns.length === 0 ? (
-        <Alert variant="info">
-          <AlertDescription>
-            Keine Simulation vorhanden. Erstellen Sie zunächst ein Szenario und starten Sie eine Simulation.
-          </AlertDescription>
-        </Alert>
-      ) : (
+      ) : completedRuns.length === 0 ? null : (
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="flex flex-wrap gap-1 h-auto">
             {completedRuns.map((run: any) => (

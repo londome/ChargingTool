@@ -107,6 +107,13 @@ export function useUpdateProject() {
   });
 }
 
+export function useSaveWizardConfig() {
+  return useMutation({
+    mutationFn: ({ projectId, config }: { projectId: string; config: Record<string, any> }) =>
+      apiFetch(`/projects/${projectId}`, { method: 'PUT', body: JSON.stringify({ wizard_config: config }) }),
+  });
+}
+
 export function useDeleteProject() {
   const qc = useQueryClient();
   return useMutation({
@@ -154,6 +161,8 @@ export function useRoutes(projectId: string | undefined) {
     queryKey: ['routes', projectId],
     queryFn: () => apiFetch<{ data: Route[]; total: number }>(`/routes?project_id=${projectId}`),
     enabled: !!projectId,
+    staleTime: 0,          // always refetch when component mounts
+    refetchOnMount: true,
   });
 }
 
@@ -408,12 +417,17 @@ export function useReichweitenProjects() {
 }
 
 export function useCopyRoutesToProject() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ source_project_id, target_project_id }: { source_project_id: string; target_project_id: string }) =>
-      apiFetch<{ copied: number }>('/routes/copy', {
+      apiFetch<{ copied: number; total_vehicle_count: number }>('/routes/copy', {
         method: 'POST',
         body: JSON.stringify({ source_project_id, target_project_id }),
       }),
+    onSuccess: (_data, variables) => {
+      // Invalidate routes cache for the target project so ReuseMobilityReadOnly loads immediately
+      qc.invalidateQueries({ queryKey: ['routes', variables.target_project_id] });
+    },
   });
 }
 

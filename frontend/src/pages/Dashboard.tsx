@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, BarChart3, FolderOpen, Trash2, Mail, ExternalLink } from 'lucide-react';
+import { Plus, ArrowRight, BarChart3, FolderOpen, Trash2, Mail, ExternalLink, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,10 @@ export default function Dashboard() {
   const evModelCount = evModels?.length ?? 0;
   const { data: recentSims } = useRecentSimulations();
   const simList: RecentSimulation[] = Array.isArray(recentSims) ? recentSims : [];
-  const { setActiveProject, activeProject } = useProjectStore();
+  const { setActiveProject, activeProject, setActiveRunId, activeRunId } = useProjectStore();
+
+  // Reset activeRunId whenever the user lands on the dashboard
+  useEffect(() => { if (activeRunId) setActiveRunId(null); }, []);
   const deleteProject = useDeleteProject();
 
   const projectList = Array.isArray(projects) ? projects : [];
@@ -27,6 +31,26 @@ export default function Dashboard() {
     const project = projectList.find(p => p.id === projectId);
     if (project) setActiveProject(project);
     navigate(`/projekte/${projectId}/wizard`);
+  };
+
+  const getResultsPath = (projectId: string, module?: string) => {
+    switch (module) {
+      case 'reichweiten':              return `/projekte/${projectId}/ergebnisse/reichweiten`;
+      case 'ladeprozess_optimierung':  return `/projekte/${projectId}/ergebnisse/optimierung`;
+      case 'ladeprozess_bidirektional':return `/projekte/${projectId}/ergebnisse/arbitrage`;
+      default:                         return `/projekte/${projectId}/ergebnisse`;
+    }
+  };
+
+  // Map project_id → last simulation info
+  const simByProject = new Map(simList.map(s => [s.project_id, s]));
+
+  const handleOpenResults = (projectId: string, module?: string) => {
+    const project = projectList.find(p => p.id === projectId);
+    if (project) setActiveProject(project);
+    const sim = simByProject.get(projectId);
+    if (sim) setActiveRunId(sim.run_id);
+    navigate(getResultsPath(projectId, module));
   };
 
   const handleDeleteProject = (projectId: string, projectName: string) => {
@@ -183,12 +207,31 @@ export default function Dashboard() {
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5">
                           {[project.fleet_type, project.depot_location, project.industry].filter(Boolean).join(' · ')}
-                          <span className="ml-2 text-slate-300">Erstellt {formatDate(project.created_at)}</span>
                         </p>
+                        {simByProject.has(project.id) && (
+                          <p className="text-xs text-[#0079C0] mt-1 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Simuliert {new Date(simByProject.get(project.id)!.completed_at).toLocaleString('de-DE', {
+                              day: '2-digit', month: '2-digit', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })} Uhr
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{project.country}</Badge>
+                      {(simByProject.has(project.id) || project.wizard_module === 'reichweiten') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenResults(project.id, project.wizard_module)}
+                          className="flex items-center gap-1 border-[#0079C0] text-[#0079C0] hover:bg-[#e6f3fc]"
+                        >
+                          <BarChart3 className="h-3 w-3" />
+                          Ergebnisse
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

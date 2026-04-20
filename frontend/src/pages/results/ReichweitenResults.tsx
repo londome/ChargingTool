@@ -237,15 +237,15 @@ export default function ReichweitenResults() {
     );
   }
 
-  if (error || !data || data.status === 'failed') {
+  if (!data && !isLoading) return null;
+
+  if (error || data?.status === 'failed') {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertTriangle className="h-10 w-10 text-amber-400 mb-3" />
         <h2 className="text-lg font-normal text-[#001141]">Keine Ergebnisse</h2>
         <p className="text-sm text-slate-400 mt-1">
-          {data?.status === 'failed'
-            ? 'Die Simulation ist fehlgeschlagen. Bitte versuche es erneut.'
-            : 'Für dieses Projekt wurden noch keine Reichweiten-Simulationen durchgeführt.'}
+          Die Simulation ist fehlgeschlagen. Bitte versuche es erneut.
         </p>
       </div>
     );

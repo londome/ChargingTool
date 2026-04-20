@@ -66,6 +66,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Run lightweight schema migrations on startup
 async function runMigrations() {
   const migrations = [
+    `ALTER TABLE route_results ADD COLUMN IF NOT EXISTS vehicle_count INTEGER NOT NULL DEFAULT 1`,
     `ALTER TABLE route_results ADD COLUMN IF NOT EXISTS start_time VARCHAR(8) DEFAULT NULL`,
     `ALTER TABLE route_results ADD COLUMN IF NOT EXISTS end_time VARCHAR(8) DEFAULT NULL`,
     `ALTER TABLE route_results ADD COLUMN IF NOT EXISTS date DATE DEFAULT NULL`,
@@ -76,6 +77,7 @@ async function runMigrations() {
     `ALTER TABLE scenarios ADD COLUMN IF NOT EXISTS wallbox_price_eur DECIMAL(10,2) NOT NULL DEFAULT 1200`,
     `ALTER TABLE scenarios ADD COLUMN IF NOT EXISTS installation_type VARCHAR(20) NOT NULL DEFAULT 'standard'`,
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS wizard_module VARCHAR(50) DEFAULT NULL`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS wizard_config JSONB DEFAULT '{}'`,
     `CREATE TABLE IF NOT EXISTS reichweiten_runs (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

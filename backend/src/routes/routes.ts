@@ -209,7 +209,7 @@ router.post('/upload', uploadSingle, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/routes/copy - Copy routes from one project to another
+// POST /api/routes/copy - Copy routes (and fleet) from one project to another
 router.post('/copy', async (req: Request, res: Response) => {
   try {
     const { source_project_id, target_project_id } = req.body;
@@ -223,9 +223,48 @@ router.post('/copy', async (req: Request, res: Response) => {
       [source_project_id]
     );
 
+    // Also copy fleet + fleet_vehicles so the simulation has vehicle specs available
+    const sourceFleets = await query<Record<string, unknown>>(
+      'SELECT * FROM fleets WHERE project_id = $1',
+      [source_project_id]
+    );
+
+    // Count total vehicles from routes (sum of vehicle_count per route = actual fleet size)
+    const totalVehicleCount = sourceRoutes.rows.reduce(
+      (s, r) => s + (Number(r['vehicle_count']) || 1), 0
+    );
+
+    for (const f of sourceFleets.rows) {
+      const newFleetId = uuidv4();
+      await query(
+        `INSERT INTO fleets (id, project_id, vehicle_count, notes) VALUES ($1,$2,$3,$4)`,
+        [newFleetId, target_project_id, f['vehicle_count'], f['notes']]
+      );
+      // Copy fleet_vehicles
+      const fvRows = await query<Record<string, unknown>>(
+        'SELECT * FROM fleet_vehicles WHERE fleet_id = $1',
+        [f['id'] as string]
+      );
+      for (const fv of fvRows.rows) {
+        await query(
+          `INSERT INTO fleet_vehicles (id, fleet_id, segment, fuel_type, count,
+            payload_kg, annual_km, consumption_l_100km, capex, maintenance_cost_annual,
+            acquisition_type, lease_monthly)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          [
+            uuidv4(), newFleetId, fv['segment'], fv['fuel_type'], fv['count'],
+            fv['payload_kg'], fv['annual_km'], fv['consumption_l_100km'],
+            fv['capex'], fv['maintenance_cost_annual'],
+            fv['acquisition_type'] ?? 'purchase', fv['lease_monthly'] ?? null,
+          ]
+        );
+      }
+    }
+
     let copied = 0;
     for (const r of sourceRoutes.rows) {
       const newId = uuidv4();
+      // Remap vehicle_id if it referred to a fleet_vehicle id — keep as-is (will match via fleet join)
       await query(
         `INSERT INTO routes (id, project_id, vehicle_id, route_id, date, start_time, end_time,
           distance_km, stops, dwell_time_min, avg_speed_kmh, payload_kg, depot_id,
@@ -245,7 +284,7 @@ router.post('/copy', async (req: Request, res: Response) => {
       copied++;
     }
 
-    res.json({ data: { copied } });
+    res.json({ data: { copied, fleets_copied: sourceFleets.rows.length, total_vehicle_count: totalVehicleCount } });
   } catch (error) {
     console.error('Error copying routes:', error);
     res.status(500).json({ error: 'Failed to copy routes' });

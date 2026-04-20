@@ -61,6 +61,7 @@ export interface WizardState {
   step1: WizardStep1Data;
   step2Vehicles: WizardVehicleRow[];
   step3MobilityMode: 'upload' | 'manual' | 'fleet_level';
+  step3TotalVehicles: number; // total EV count derived from mobility profile (used for LP default)
   step3Depot: WizardStep3DepotData;
   step4: {
     soc_start: number;
@@ -108,6 +109,7 @@ interface ProjectStore {
   updateWizardStep1: (data: Partial<WizardStep1Data>) => void;
   updateWizardStep2: (vehicles: WizardVehicleRow[]) => void;
   setWizardMobilityMode: (mode: 'upload' | 'manual' | 'fleet_level') => void;
+  setStep3TotalVehicles: (count: number) => void;
   updateWizardStep3Depot: (data: Partial<WizardStep3DepotData>) => void;
   updateWizardStep4: (data: Partial<WizardState['step4']>) => void;
   setWizardSelectedEVs: (ids: string[]) => void;
@@ -163,6 +165,7 @@ const initialWizardState: WizardState = {
   },
   step2Vehicles: [],
   step3MobilityMode: 'manual',
+  step3TotalVehicles: 0,
   step3Depot: defaultWizardStep3Depot,
   step4: defaultWizardStep4,
   step5SelectedEVIds: [],
@@ -211,6 +214,9 @@ export const useProjectStore = create<ProjectStore>()(
       setWizardMobilityMode: (mode) => set((state) => ({
         wizard: { ...state.wizard, step3MobilityMode: mode },
       })),
+      setStep3TotalVehicles: (count) => set((state) => ({
+        wizard: { ...state.wizard, step3TotalVehicles: count },
+      })),
       updateWizardStep3Depot: (data) => set((state) => ({
         wizard: { ...state.wizard, step3Depot: { ...state.wizard.step3Depot, ...data } },
       })),
@@ -251,16 +257,9 @@ export const useProjectStore = create<ProjectStore>()(
       partialize: (state) => ({
         activeProject: state.activeProject,
         activeScenarioId: state.activeScenarioId,
-        activeRunId: state.activeRunId,
         sidebarCollapsed: state.sidebarCollapsed,
         lastgangProfile: state.lastgangProfile,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Clear stale demo run ID on app start
-        if (state && state.activeRunId === 'demo') {
-          state.activeRunId = null;
-        }
-      },
     }
   )
 );

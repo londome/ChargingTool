@@ -22,6 +22,7 @@ export default function TourResults() {
   const { projectId } = useParams<{ projectId: string }>();
   const { activeRunId } = useProjectStore();
   const { data: results, isLoading } = useSimulationResults(activeRunId ?? undefined);
+  if (!activeRunId) return null;
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'feasible' | 'charging' | 'not_feasible'>('all');

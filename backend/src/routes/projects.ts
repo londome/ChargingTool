@@ -40,8 +40,26 @@ router.get('/recent-simulations', async (req: Request, res: Response) => {
       FROM simulation_runs sr
       JOIN projects p ON p.id = sr.project_id
       WHERE sr.status = 'completed'
-      ORDER BY sr.completed_at DESC
-      LIMIT 5
+      UNION ALL
+      SELECT opt.id as run_id, p.id as project_id, p.name as project_name,
+             p.wizard_module, opt.completed_at
+      FROM optimization_runs opt
+      JOIN projects p ON p.id = opt.project_id
+      WHERE opt.status = 'completed'
+      UNION ALL
+      SELECT arb.id as run_id, p.id as project_id, p.name as project_name,
+             p.wizard_module, arb.completed_at
+      FROM arbitrage_runs arb
+      JOIN projects p ON p.id = arb.project_id
+      WHERE arb.status = 'completed'
+      UNION ALL
+      SELECT rw.id as run_id, p.id as project_id, p.name as project_name,
+             p.wizard_module, rw.completed_at
+      FROM reichweiten_runs rw
+      JOIN projects p ON p.id = rw.project_id
+      WHERE rw.status = 'completed'
+      ORDER BY completed_at DESC
+      LIMIT 10
     `);
     res.json({ data: result.rows });
   } catch (error) {
@@ -126,6 +144,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       industry,
       depot_location,
       charging_options,
+      wizard_config,
     } = req.body;
 
     const result = await query<Project>(
@@ -137,10 +156,12 @@ router.put('/:id', async (req: Request, res: Response) => {
            industry = COALESCE($5, industry),
            depot_location = COALESCE($6, depot_location),
            charging_options = COALESCE($7, charging_options),
+           wizard_config = CASE WHEN $8::jsonb IS NOT NULL THEN COALESCE(wizard_config, '{}') || $8::jsonb ELSE wizard_config END,
            updated_at = NOW()
-       WHERE id = $8
+       WHERE id = $9
        RETURNING *`,
-      [name, country, currency, fleet_type, industry, depot_location, charging_options, id]
+      [name, country, currency, fleet_type, industry, depot_location, charging_options,
+       wizard_config ? JSON.stringify(wizard_config) : null, id]
     );
 
     if (!result.rows.length) {

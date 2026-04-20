@@ -70,8 +70,8 @@ export default function KPICard({
               <TooltipTrigger asChild>
                 <Info className="h-3 w-3 text-slate-300 cursor-help" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-64">
-                <p className="text-xs">{tooltip}</p>
+              <TooltipContent className="max-w-72">
+                <p className="text-xs whitespace-pre-line leading-relaxed">{tooltip}</p>
               </TooltipContent>
             </Tooltip>
           )}

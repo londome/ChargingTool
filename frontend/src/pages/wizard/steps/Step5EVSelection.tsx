@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Zap, Package, Battery } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
-import { useEVModels } from '@/lib/api';
+import { useEVModels, useSaveWizardConfig } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { getSegmentLabel, formatCurrency } from '@/lib/utils';
 
 export default function Step5EVSelection() {
   const { wizard, setWizardSelectedEVs, setWizardStep } = useProjectStore();
+  const saveWizardConfig = useSaveWizardConfig();
   const { data: evModels, isLoading } = useEVModels();
   const [selectedIds, setSelectedIds] = useState<string[]>(wizard.step5SelectedEVIds);
   const [filterSegment, setFilterSegment] = useState<string>('all');
@@ -36,6 +37,12 @@ export default function Step5EVSelection() {
 
   const handleNext = () => {
     setWizardSelectedEVs(selectedIds);
+    if (wizard.projectId && !wizard.projectId.startsWith('local_')) {
+      saveWizardConfig.mutate({
+        projectId: wizard.projectId,
+        config: { ...((wizard as any).wizard_config ?? {}), step5SelectedEVIds: selectedIds },
+      });
+    }
     setWizardStep(6);
   };
 

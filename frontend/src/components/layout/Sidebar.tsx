@@ -1,8 +1,8 @@
 import { NavLink, useParams, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderOpen, Truck, Route, BarChart3,
-  Zap, Settings, ChevronLeft, ChevronRight,
-  Building2, FlaskConical, Gauge, Battery, BatteryCharging, BookOpen,
+  LayoutDashboard, FolderOpen, BarChart3, Route,
+  Zap, ChevronLeft, ChevronRight,
+  Gauge, BatteryCharging, BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/store/projectStore';
@@ -22,7 +22,7 @@ const staticNavItems: NavItem[] = [
 
 function ProjectNavItems({ projectId }: { projectId: string }) {
   const location = useLocation();
-  const { activeProject } = useProjectStore();
+  const { activeProject, activeRunId } = useProjectStore();
   const isResultsActive =
     location.pathname.includes(`/projekte/${projectId}/ergebnisse`);
   const isReichweitenModule = activeProject?.wizard_module === 'reichweiten';
@@ -33,17 +33,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
     { label: 'Projekt-Wizard', href: `/projekte/${projectId}/wizard`, icon: FolderOpen },
   ];
 
-  const settingsItems = [
-    { label: 'Szenarien', href: `/projekte/${projectId}/szenarien`, icon: FlaskConical },
-  ];
 
-  const resultItems = [
-    { label: 'Flottenergebnisse', href: `/projekte/${projectId}/ergebnisse`, icon: BarChart3, exact: true },
-    { label: 'Tourenanalyse', href: `/projekte/${projectId}/ergebnisse/touren`, icon: Route },
-    ...(!isReichweitenModule
-      ? [{ label: 'Infrastruktur', href: `/projekte/${projectId}/ergebnisse/infrastruktur`, icon: Building2 }]
-      : []),
-  ];
 
   return (
     <div className="mt-4">
@@ -66,32 +56,9 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
         </NavLink>
       ))}
 
-      {/* Einstellungen section */}
-      <div className="mt-4">
-        <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
-          <Settings className="h-3 w-3" /> Einstellungen
-        </p>
-        {settingsItems.map((item) => (
-          <NavLink
-            key={item.href}
-            to={item.href}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-[#0079C0] text-white font-normal'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
-              )
-            }
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </div>
 
-      {/* Ergebnisse section */}
-      {isReichweitenModule ? (
+      {/* Ergebnisse section — only show when a simulation has been run or we're on an ergebnisse route */}
+      {(activeRunId || isResultsActive) && (isReichweitenModule ? (
         /* Reichweiten module: show only dedicated results page */
         <div className="mt-4">
           <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
@@ -155,15 +122,16 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
           </NavLink>
         </div>
       ) : (
-      <div className={cn(
-        'mt-1 rounded',
-        isResultsActive ? 'bg-white/10' : ''
-      )}>
+      <div className={cn('mt-1 rounded', isResultsActive ? 'bg-white/10' : '')}>
         <div className="flex items-center gap-3 px-3 py-2 text-xs font-normal text-white/50 uppercase tracking-wider">
           <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-          <span>Ergebnisse</span>
+          <span>Simulationsergebnisse</span>
         </div>
-        {resultItems.map((item) => (
+        {[
+          { label: 'Kosten & Emissionen', href: `/projekte/${projectId}/ergebnisse`, icon: BarChart3, exact: true },
+          { label: 'Tourenanalyse', href: `/projekte/${projectId}/ergebnisse/touren`, icon: Route, exact: false },
+          { label: 'Ladevorgang', href: `/projekte/${projectId}/ergebnisse/ladevorgang`, icon: Zap, exact: false },
+        ].map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
@@ -182,7 +150,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
           </NavLink>
         ))}
       </div>
-      )}
+      ))}
     </div>
   );
 }

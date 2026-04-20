@@ -111,6 +111,7 @@ export async function runSimulation(
   const routeResults: {
     route_id: string;
     vehicle_id: string | null;
+    vehicle_count: number;
     distance_km: number;
     fuel_use_l: number;
     fuel_cost: number;
@@ -228,6 +229,7 @@ export async function runSimulation(
     routeResults.push({
       route_id: route.route_id,
       vehicle_id: route.vehicle_id,
+      vehicle_count,
       distance_km: route.distance_km,
       fuel_use_l: fuel_l * annual_trips,
       fuel_cost: annual_fuel_cost,
@@ -253,24 +255,36 @@ export async function runSimulation(
 
   // Aggregate OpEx
   // Maintenance is added once per fleet vehicle (not per route) for both ICE and EV — symmetric treatment.
-  const ice_maintenance_total = vehicles.reduce((sum, v) => sum + v.maintenance_cost_annual * v.count, 0);
-  const ev_maintenance_total = vehicles.reduce((sum, v) => sum + v.maintenance_cost_annual * 0.6 * v.count, 0);
+  // Maintenance uses total_route_vehicles as the actual fleet size
+  const maintenanceScale = (() => {
+    const fleetCount = vehicles.reduce((s, v) => s + v.count, 0);
+    return fleetCount > 0 && total_route_vehicles > 0 ? total_route_vehicles / fleetCount : 1;
+  })();
+  const ice_maintenance_total = vehicles.reduce((sum, v) => sum + v.maintenance_cost_annual * v.count * maintenanceScale, 0);
+  const ev_maintenance_total  = vehicles.reduce((sum, v) => sum + v.maintenance_cost_annual * 0.6 * v.count * maintenanceScale, 0);
   const opex_ice = total_fuel_cost + ice_maintenance_total;
   const opex_ev = total_ev_cost + ev_maintenance_total;
 
   // TCO (using vehicle CAPEX)
+  // fleet_vehicles.count can be 1 (UI default) even when routes have vehicle_count > 1.
+  // Scale CAPEX by total_route_vehicles so it matches actual fleet size.
+  const totalFleetVehicleCount = vehicles.reduce((s, v) => s + v.count, 0);
+  const capexScaleFactor = totalFleetVehicleCount > 0 && total_route_vehicles > 0
+    ? total_route_vehicles / totalFleetVehicleCount
+    : 1;
+
   const ice_capex_annual = vehicles.reduce((sum, v) => {
     const capex = v.capex ? annualizeCapex(v.capex) : (v.lease_monthly ?? 0) * 12;
-    return sum + capex * v.count;
+    return sum + capex * v.count * capexScaleFactor;
   }, 0);
 
-  // Average EV CAPEX
+  // EV CAPEX — same scale factor applied
   const ev_capex_annual = vehicles.reduce((sum, v) => {
     const bestMatch = getBestEVMatch(v, evModels, scenario);
     if (!bestMatch?.ev_model) return sum;
     const ev = bestMatch.ev_model;
     const capex = ev.purchase_price ? annualizeCapex(ev.purchase_price) : (ev.lease_monthly ?? 0) * 12;
-    return sum + capex * v.count;
+    return sum + capex * v.count * capexScaleFactor;
   }, 0);
 
   // Infrastructure estimation (must come before TCO to include infra_capex_total)
@@ -339,13 +353,13 @@ export async function runSimulation(
       const rrId = uuidv4();
       await client.query(
         `INSERT INTO route_results
-          (id, simulation_run_id, route_id, vehicle_id, distance_km, fuel_use_l, fuel_cost,
+          (id, simulation_run_id, route_id, vehicle_id, vehicle_count, distance_km, fuel_use_l, fuel_cost,
            ice_co2e_kg, ev_energy_kwh, feasible_without_charging, feasible_with_charging,
            required_charge_energy_kwh, annual_cost_delta, annual_co2e_delta_kg,
            start_time, end_time, date)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
         [
-          rrId, runId, rr.route_id, rr.vehicle_id,
+          rrId, runId, rr.route_id, rr.vehicle_id, rr.vehicle_count ?? 1,
           rr.distance_km, rr.fuel_use_l, rr.fuel_cost,
           rr.ice_co2e_kg, rr.ev_energy_kwh,
           rr.feasible_without_charging, rr.feasible_with_charging,

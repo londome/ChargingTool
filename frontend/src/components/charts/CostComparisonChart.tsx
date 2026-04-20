@@ -33,8 +33,8 @@ export default function CostComparisonChart({ iceOpex, evOpex, iceFuelCost, evEl
       name: 'Jährliche Kosten',
       'Kraftstoff (ICE)': Math.round(iceFuelCost),
       'Strom (EV)': Math.round(evElecCost),
-      'Sonstige OpEx (ICE)': Math.round(iceOpex - iceFuelCost),
-      'Sonstige OpEx (EV)': Math.round(evOpex - evElecCost),
+      'Wartung (ICE)': Math.round(iceOpex - iceFuelCost),
+      'Wartung (EV)': Math.round(evOpex - evElecCost),
     },
   ];
 
@@ -52,9 +52,9 @@ export default function CostComparisonChart({ iceOpex, evOpex, iceFuelCost, evEl
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Kraftstoff (ICE)" stackId="ice" fill="#ef4444" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Sonstige OpEx (ICE)" stackId="ice" fill="#fca5a5" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Wartung (ICE)" stackId="ice" fill="#fca5a5" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Strom (EV)" stackId="ev" fill="#22c55e" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Sonstige OpEx (EV)" stackId="ev" fill="#86efac" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Wartung (EV)" stackId="ev" fill="#86efac" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-6 mt-2 text-xs">
