@@ -24,32 +24,38 @@ function InfoTip({ text }: { text: string }) {
 
 // ── CSV parsing helpers ────────────────────────────────────────────────────────
 
-function parseCsvLastgang(text: string): { time: string; power_kw: number }[] {
+// Extracts HH:MM from any datetime string — handles full timestamps like
+// "2024-01-15 07:30", "2024-01-15T07:30:00", "15.01.2024 07:30", or plain "07:30"
+function extractTime(raw: string): string {
+  const m = raw.match(/(\d{1,2}):(\d{2})/);
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : raw.trim();
+}
+
+function parseCsvLastgang(text: string): { timestamp: string; time: string; power_kw: number }[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
   const delim = lines[0].includes(';') ? ';' : ',';
   const headers = lines[0].split(delim).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
   const powerKw = ['leistung', 'power', 'kw', 'watt', 'p_kw', 'power_kw', 'last', 'load'];
-  const timeKw  = ['zeit', 'time', 'timestamp', 'datum', 'uhrzeit', 'date', 'datetime'];
+  const timeKw  = ['timestamp', 'zeit', 'time', 'datum', 'uhrzeit', 'date', 'datetime'];
   let powerIdx = headers.findIndex(h => powerKw.some(k => h.includes(k)));
   if (powerIdx === -1) powerIdx = 1;
   let timeIdx = headers.findIndex(h => timeKw.some(k => h.includes(k)));
   if (timeIdx === -1) timeIdx = 0;
-  const rows: { time: string; power_kw: number }[] = [];
+  const rows: { timestamp: string; time: string; power_kw: number }[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(delim);
     if (cols.length <= Math.max(timeIdx, powerIdx)) continue;
-    const rawTime  = cols[timeIdx].trim().replace(/["']/g, '');
+    const rawTs   = cols[timeIdx].trim().replace(/["']/g, '');
     const rawPower = cols[powerIdx].trim().replace(/["']/g, '').replace(',', '.');
     const power    = parseFloat(rawPower);
     if (isNaN(power)) continue;
-    const m = rawTime.match(/(\d{1,2}):(\d{2})/);
-    rows.push({ time: m ? `${m[1].padStart(2, '0')}:${m[2]}` : rawTime, power_kw: power });
+    rows.push({ timestamp: rawTs, time: extractTime(rawTs), power_kw: power });
   }
   return rows;
 }
 
-function buildDailyAverage(rows: { time: string; power_kw: number }[], max_grid_connection_kw: number): LastgangProfile {
+function buildDailyAverage(rows: { timestamp: string; time: string; power_kw: number }[], max_grid_connection_kw: number): LastgangProfile {
   const groups: Record<string, number[]> = {};
   for (const r of rows) {
     if (!groups[r.time]) groups[r.time] = [];
@@ -294,33 +300,71 @@ export default function Step3Depot() {
             <div className="flex-1 h-px bg-slate-100 ml-1" />
           </div>
 
-          {/* Format hint + template download */}
-          <div className="text-xs text-slate-500 bg-slate-50 rounded border border-slate-100 p-3 space-y-1.5">
-            <p className="font-medium text-[#001141]">Dateiformat</p>
-            <p>CSV mit zwei Spalten: <code className="bg-slate-100 px-1 rounded">Zeit</code> und <code className="bg-slate-100 px-1 rounded">Leistung_kW</code>. Trennzeichen: <code className="bg-slate-100 px-1 rounded">,</code> oder <code className="bg-slate-100 px-1 rounded">;</code></p>
-            <p>Empfohlene Auflösung: <strong>15 min</strong> (96 Zeilen/Tag). Auch 30 min oder 1 h werden akzeptiert.</p>
-            <p className="text-slate-400">Hinweis: Das Lastprofil wird derzeit als Overlay in den Ergebnissen visualisiert. Die Einbindung in die Ladeoptimierung folgt in einer späteren Version.</p>
-            <button
-              type="button"
-              onClick={() => {
-                const rows = ['Zeit;Leistung_kW'];
-                for (let h = 0; h < 24; h++) {
-                  for (const m of [0, 15, 30, 45]) {
-                    const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                    const base = h >= 7 && h < 20 ? 45 + Math.round(Math.random() * 25) : 15 + Math.round(Math.random() * 10);
-                    rows.push(`${t};${base}`);
+          {/* Format info — same style as Step3Mobility CSV tab */}
+          <div className="rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
+
+            {/* Pflichtfelder */}
+            <div className="px-4 py-3">
+              <p className="text-xs font-medium text-[#001141] mb-2">Pflichtfelder</p>
+              <div className="space-y-1.5">
+                {[
+                  { field: 'Timestamp', desc: 'Datum und Uhrzeit des Messintervalls', ex: '2024-01-15 07:30' },
+                  { field: 'Leistung_kW', desc: 'Gemessene Leistung am Netzanschluss', ex: '48.5' },
+                ].map(({ field, desc, ex }) => (
+                  <div key={field} className="flex items-center gap-3">
+                    <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-[#0079C0] font-mono w-40 shrink-0">{field}</code>
+                    <span className="text-xs text-slate-600 flex-1">{desc}</span>
+                    <span className="text-xs text-slate-400 font-mono shrink-0">z.B. {ex}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hinweise */}
+            <div className="px-4 py-3">
+              <p className="text-xs font-medium text-[#001141] mb-2">Hinweise</p>
+              <div className="space-y-1.5">
+                {[
+                  { field: 'Auflösung', desc: 'Empfohlen: 15 min (96 Zeilen/Tag). Auch 30 min oder 1 h akzeptiert.' },
+                  { field: 'Trennzeichen', desc: 'Komma (,) oder Semikolon (;) — wird automatisch erkannt.' },
+                  { field: 'Zeitraum', desc: 'Beliebig lang. Es wird ein Tagesdurchschnittsprofil berechnet.' },
+                  { field: 'Optimierung', desc: 'Lastprofil derzeit als Overlay visualisiert. Einbindung in Ladeoptimierung folgt in V1.1.' },
+                ].map(({ field, desc }) => (
+                  <div key={field} className="flex items-start gap-3">
+                    <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-500 font-mono w-40 shrink-0 mt-0.5">{field}</code>
+                    <span className="text-xs text-slate-500">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Download */}
+            <div className="px-4 py-3 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Vorlage herunterladen und befüllen</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const rows = ['Timestamp;Leistung_kW'];
+                  const base = new Date('2024-01-15');
+                  for (let i = 0; i < 96; i++) {
+                    const h = Math.floor(i / 4);
+                    const m = (i % 4) * 15;
+                    const ts = `${base.toISOString().slice(0,10)} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    const kw = h >= 7 && h < 20 ? 40 + Math.round(Math.sin(i / 8) * 15 + 15) : 12 + Math.round(Math.random() * 8);
+                    rows.push(`${ts};${kw}`);
                   }
-                }
-                const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'lastprofil_beispiel.csv';
-                a.click();
-              }}
-              className="flex items-center gap-1 text-[#0079C0] hover:underline underline-offset-2 mt-1"
-            >
-              <Download className="h-3 w-3" /> Beispiel-CSV herunterladen
-            </button>
+                  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'lastprofil_vorlage.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[#0079C0] text-[#0079C0] rounded hover:bg-[#e6f3fc] transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" /> Vorlage (CSV)
+              </button>
+            </div>
           </div>
 
           {!lastgangProfile ? (
