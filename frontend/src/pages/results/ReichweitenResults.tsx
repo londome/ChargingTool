@@ -305,6 +305,13 @@ export default function ReichweitenResults() {
         <div className="flex items-center gap-2 shrink-0 print-hide">
           <Button
             variant="outline"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2"
+          >
+            ← Zurück
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => window.print()}
             className="flex items-center gap-2"
           >
