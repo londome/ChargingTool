@@ -162,7 +162,7 @@ export default function Step3Depot() {
 
   // Total EVs from fleet definition (for "1 LP pro EV" option)
   const totalEVs = wizard.step2Vehicles.reduce((sum, v) => sum + (v.count || 1), 0) || 10;
-  const [lpMode, setLpMode] = useState<'fixed' | 'per_ev'>('fixed');
+  const [lpMode, setLpMode] = useState<'fixed' | 'per_ev'>('per_ev');
   const [lastgangError, setLastgangError] = useState<string | null>(null);
 
   const { handleSubmit, control, watch, setValue } = useForm<WizardStep3DepotData>({
@@ -239,8 +239,8 @@ export default function Step3Depot() {
               {/* Mode toggle */}
               <div className="flex gap-2 mb-2">
                 {[
-                  { id: 'fixed', label: 'Feste Anzahl' },
-                  { id: 'per_ev', label: '1 LP pro EV' },
+                  { id: 'per_ev', label: '1 LP pro EV', badge: `${totalEVs} LP` },
+                  { id: 'fixed', label: 'Feste Anzahl', badge: 'V1.1' },
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -249,46 +249,26 @@ export default function Step3Depot() {
                       setLpMode(opt.id as 'fixed' | 'per_ev');
                       if (opt.id === 'per_ev') setValue('num_charging_points', totalEVs);
                     }}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors flex items-center gap-1.5 ${
                       lpMode === opt.id
                         ? 'bg-[#0079C0] text-white border-[#0079C0]'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     {opt.label}
-                    {opt.id === 'per_ev' && <span className="ml-1 opacity-70">({totalEVs} LP)</span>}
+                    <span className={`text-[10px] opacity-70`}>{opt.badge}</span>
                   </button>
                 ))}
               </div>
-              {lpMode === 'fixed' ? (
-                <Controller
-                  name="num_charging_points"
-                  control={control}
-                  render={({ field: f }) => (
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Slider
-                          min={1} max={200} step={1}
-                          value={[Number(f.value)]}
-                          onValueChange={([v]) => f.onChange(v)}
-                          className="[&_[role=slider]]:bg-[#0079C0] [&_[role=slider]]:border-[#0079C0]"
-                        />
-                      </div>
-                      <Input
-                        type="number" min={1} max={200}
-                        className="h-8 text-sm text-right w-20 shrink-0"
-                        value={Number(f.value)}
-                        onChange={e => f.onChange(parseInt(e.target.value) || 1)}
-                      />
-                      <span className="text-xs text-slate-400 w-12 shrink-0">LP</span>
-                    </div>
-                  )}
-                />
-              ) : (
+              {lpMode === 'per_ev' ? (
                 <div className="flex items-center gap-2 p-2.5 bg-[#e6f3fc] rounded border border-[#0079C0]/20 text-xs text-[#001141]">
                   <CheckCircle2 className="h-3.5 w-3.5 text-[#0079C0] shrink-0" />
                   <span><strong>{totalEVs} Ladepunkte</strong> — ein LP pro EV aus dem Mobilitätsprofil.</span>
-                  <span className="ml-auto text-slate-400 italic">Optimierung folgt in V1.1</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-2.5 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>Weniger Ladepunkte als EVs erfordert Warteschlangenoptimierung — folgt in V1.1.</span>
                 </div>
               )}
             </div>
@@ -315,7 +295,7 @@ export default function Step3Depot() {
             <Zap className="h-4 w-4 text-slate-400" />
             <span className="text-sm font-medium text-[#001141]">Depot-Lastprofil</span>
             <span className="text-xs text-slate-400">(optional)</span>
-            <InfoTip text="Bestehendes Lastprofil des Depots (CSV). Wird in den Ergebnissen mit der EV-Ladelast überlagert dargestellt." />
+            <InfoTip text="Bestehendes Lastprofil des Depots (CSV, 15-min-Auflösung). Wird in den Ergebnissen mit der EV-Ladelast überlagert. Trennzeichen , oder ; — Zeitraum beliebig, Tagesdurchschnitt wird berechnet. Einbindung in Ladeoptimierung folgt in V1.1." />
             <div className="flex-1 h-px bg-slate-100 ml-1" />
           </div>
 
@@ -368,10 +348,6 @@ export default function Step3Depot() {
             </div>
           </div>
 
-          <p className="text-xs text-slate-400 flex items-center gap-1">
-            <Info className="h-3 w-3 shrink-0" />
-            Auflösung: <strong className="text-slate-500">15 min erforderlich</strong> (96 Intervalle/Tag) · Trennzeichen , oder ; · Zeitraum beliebig — Tagesdurchschnitt wird berechnet · Einbindung in Ladeoptimierung folgt in V1.1.
-          </p>
 
           {lastgangError && (
             <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700">
