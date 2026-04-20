@@ -160,7 +160,7 @@ export default function Step1ProjectContext() {
                   {selectedReuseId && sourceProject && (
                     <div className="flex items-center gap-1.5 text-xs text-[#043F2E] bg-[#f4fbf8] rounded px-2.5 py-1.5 border border-[#043F2E]/20">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      Daten aus <span className="font-medium mx-0.5">„{sourceProject.name}"</span> werden übernommen. Nur der Projektname ist änderbar.
+                      Daten aus <span className="font-medium mx-0.5">„{sourceProject.name}"</span> werden übernommen.
                     </div>
                   )}
                 </div>
@@ -169,7 +169,7 @@ export default function Step1ProjectContext() {
           </div>
         )}
 
-        {/* ── Project name ── always shown ── */}
+        {/* ── Project name ── */}
         <div className="space-y-2">
           <Label htmlFor="name">Projektname *</Label>
           <Input
@@ -180,94 +180,72 @@ export default function Step1ProjectContext() {
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
 
-        {/* ── Full form — hidden when reusing (data pre-filled) ── */}
-        {!isReusing && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Land *</Label>
-                <Controller name="country" control={control} render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Land auswählen" /></SelectTrigger>
-                    <SelectContent>
-                      {EUROPEAN_COUNTRIES.map(c => (
-                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Währung *</Label>
-                <Controller name="currency" control={control} render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Währung" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EUR">EUR – Euro</SelectItem>
-                      <SelectItem value="CHF">CHF – Schweizer Franken</SelectItem>
-                      <SelectItem value="GBP">GBP – Britisches Pfund</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Flottentyp *</Label>
-                <Controller name="fleet_type" control={control} render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Flottentyp auswählen" /></SelectTrigger>
-                    <SelectContent>
-                      {FLEET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )} />
-                {errors.fleet_type && <p className="text-xs text-red-500">{errors.fleet_type.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Branche *</Label>
-                <Controller name="industry" control={control} render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Branche auswählen" /></SelectTrigger>
-                    <SelectContent>
-                      {GERMANY_INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )} />
-                {errors.industry && <p className="text-xs text-red-500">{errors.industry.message}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="depot_location">Depotstandort *</Label>
-              <Input
-                id="depot_location"
-                {...register('depot_location')}
-                placeholder="z.B. Frankfurt am Main"
-              />
-              {errors.depot_location && <p className="text-xs text-red-500">{errors.depot_location.message}</p>}
-            </div>
-          </>
-        )}
-
-        {/* Summary when reusing — show inherited values read-only */}
-        {isReusing && sourceProject && (
-          <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-            {[
-              ['Land', EUROPEAN_COUNTRIES.find(c => c.code === sourceProject.country)?.name ?? sourceProject.country],
-              ['Währung', sourceProject.currency],
-              ['Flottentyp', sourceProject.fleet_type],
-              ['Branche', sourceProject.industry],
-              ['Depotstandort', sourceProject.depot_location],
-            ].map(([label, value]) => (
-              <div key={label} className="flex flex-col bg-slate-50 rounded px-3 py-2 border border-slate-100">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wide">{label}</span>
-                <span className="font-medium text-[#001141] mt-0.5">{value}</span>
-              </div>
-            ))}
+        {/* ── Rest of form — always visible, pre-filled when reusing ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Land *</Label>
+            <Controller name="country" control={control} render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Land auswählen" /></SelectTrigger>
+                <SelectContent>
+                  {EUROPEAN_COUNTRIES.map(c => (
+                    <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )} />
           </div>
-        )}
+
+          <div className="space-y-2">
+            <Label>Währung *</Label>
+            <Controller name="currency" control={control} render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Währung" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">EUR – Euro</SelectItem>
+                  <SelectItem value="CHF">CHF – Schweizer Franken</SelectItem>
+                  <SelectItem value="GBP">GBP – Britisches Pfund</SelectItem>
+                </SelectContent>
+              </Select>
+            )} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Flottentyp *</Label>
+            <Controller name="fleet_type" control={control} render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Flottentyp auswählen" /></SelectTrigger>
+                <SelectContent>
+                  {FLEET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )} />
+            {errors.fleet_type && <p className="text-xs text-red-500">{errors.fleet_type.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Branche *</Label>
+            <Controller name="industry" control={control} render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Branche auswählen" /></SelectTrigger>
+                <SelectContent>
+                  {GERMANY_INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )} />
+            {errors.industry && <p className="text-xs text-red-500">{errors.industry.message}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="depot_location">Depotstandort *</Label>
+          <Input
+            id="depot_location"
+            {...register('depot_location')}
+            placeholder="z.B. Frankfurt am Main"
+          />
+          {errors.depot_location && <p className="text-xs text-red-500">{errors.depot_location.message}</p>}
+        </div>
 
       </div>
 
