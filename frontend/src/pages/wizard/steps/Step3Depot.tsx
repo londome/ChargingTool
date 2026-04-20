@@ -55,7 +55,11 @@ function parseCsvLastgang(text: string): { timestamp: string; time: string; powe
   return rows;
 }
 
-function buildDailyAverage(rows: { timestamp: string; time: string; power_kw: number }[], max_grid_connection_kw: number): LastgangProfile {
+// Returns null if resolution is not 15 min
+function buildDailyAverage(
+  rows: { timestamp: string; time: string; power_kw: number }[],
+  max_grid_connection_kw: number
+): LastgangProfile | null {
   const groups: Record<string, number[]> = {};
   for (const r of rows) {
     if (!groups[r.time]) groups[r.time] = [];
@@ -64,6 +68,8 @@ function buildDailyAverage(rows: { timestamp: string; time: string; power_kw: nu
   const intervals = Object.entries(groups)
     .map(([time, vals]) => ({ time, power_kw: vals.reduce((a, b) => a + b, 0) / vals.length }))
     .sort((a, b) => a.time.localeCompare(b.time));
+
+  // Detect resolution from first two intervals
   let resolution_min = 15;
   if (intervals.length >= 2) {
     const [h1, m1] = intervals[0].time.split(':').map(Number);
@@ -71,6 +77,10 @@ function buildDailyAverage(rows: { timestamp: string; time: string; power_kw: nu
     const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
     if (diff > 0) resolution_min = diff;
   }
+
+  // Reject non-15min files
+  if (resolution_min !== 15) return null;
+
   const powers = intervals.map(i => i.power_kw);
   return {
     intervals,
@@ -131,12 +141,20 @@ export default function Step3Depot() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleLastgangFile = useCallback((file: File) => {
+    setLastgangError(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const rows = parseCsvLastgang(text);
-      if (rows.length === 0) return;
+      if (rows.length === 0) {
+        setLastgangError('Datei konnte nicht gelesen werden. Bitte Format prüfen.');
+        return;
+      }
       const profile = buildDailyAverage(rows, wizard.step3Depot?.max_grid_connection_kw ?? 100);
+      if (!profile) {
+        setLastgangError('Ungültige Auflösung. Die Datei muss 15-Minuten-Intervalle enthalten (96 Zeilen/Tag).');
+        return;
+      }
       setLastgangProfile(profile);
     };
     reader.readAsText(file, 'UTF-8');
@@ -145,6 +163,7 @@ export default function Step3Depot() {
   // Total EVs from fleet definition (for "1 LP pro EV" option)
   const totalEVs = wizard.step2Vehicles.reduce((sum, v) => sum + (v.count || 1), 0) || 10;
   const [lpMode, setLpMode] = useState<'fixed' | 'per_ev'>('fixed');
+  const [lastgangError, setLastgangError] = useState<string | null>(null);
 
   const { handleSubmit, control, watch, setValue } = useForm<WizardStep3DepotData>({
     defaultValues: wizard.step3Depot ?? {
@@ -351,8 +370,15 @@ export default function Step3Depot() {
 
           <p className="text-xs text-slate-400 flex items-center gap-1">
             <Info className="h-3 w-3 shrink-0" />
-            Empfohlene Auflösung: 15 min · Trennzeichen , oder ; · Zeitraum beliebig — Tagesdurchschnitt wird berechnet · Einbindung in Ladeoptimierung folgt in V1.1.
+            Auflösung: <strong className="text-slate-500">15 min erforderlich</strong> (96 Intervalle/Tag) · Trennzeichen , oder ; · Zeitraum beliebig — Tagesdurchschnitt wird berechnet · Einbindung in Ladeoptimierung folgt in V1.1.
           </p>
+
+          {lastgangError && (
+            <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {lastgangError}
+            </div>
+          )}
 
           {!lastgangProfile ? (
             <div
