@@ -320,24 +320,6 @@ export default function Step3Depot() {
               </div>
             </div>
 
-            {/* Hinweise */}
-            <div className="px-4 py-3">
-              <p className="text-xs font-medium text-[#001141] mb-2">Hinweise</p>
-              <div className="space-y-1.5">
-                {[
-                  { field: 'Auflösung', desc: 'Empfohlen: 15 min (96 Zeilen/Tag). Auch 30 min oder 1 h akzeptiert.' },
-                  { field: 'Trennzeichen', desc: 'Komma (,) oder Semikolon (;) — wird automatisch erkannt.' },
-                  { field: 'Zeitraum', desc: 'Beliebig lang. Es wird ein Tagesdurchschnittsprofil berechnet.' },
-                  { field: 'Optimierung', desc: 'Lastprofil derzeit als Overlay visualisiert. Einbindung in Ladeoptimierung folgt in V1.1.' },
-                ].map(({ field, desc }) => (
-                  <div key={field} className="flex items-start gap-3">
-                    <code className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-500 font-mono w-40 shrink-0 mt-0.5">{field}</code>
-                    <span className="text-xs text-slate-500">{desc}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Download */}
             <div className="px-4 py-3 flex items-center justify-between">
               <span className="text-xs text-slate-500">Vorlage herunterladen und befüllen</span>
@@ -366,6 +348,11 @@ export default function Step3Depot() {
               </button>
             </div>
           </div>
+
+          <p className="text-xs text-slate-400 flex items-center gap-1">
+            <Info className="h-3 w-3 shrink-0" />
+            Empfohlene Auflösung: 15 min · Trennzeichen , oder ; · Zeitraum beliebig — Tagesdurchschnitt wird berechnet · Einbindung in Ladeoptimierung folgt in V1.1.
+          </p>
 
           {!lastgangProfile ? (
             <div
