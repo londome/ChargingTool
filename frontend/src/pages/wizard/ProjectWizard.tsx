@@ -12,6 +12,7 @@ import Step5EVSelection from './steps/Step5EVSelection';
 import Step6Scenarios from './steps/Step6Scenarios';
 import Step3ReichweitenEVSelection from './steps/Step3ReichweitenEVSelection';
 import Step4ReichweitenParams from './steps/Step4ReichweitenParams';
+import Step3LadeprozessEV from './steps/Step3LadeprozessEV';
 import Step7ChargingStrategy from './steps/Step7ChargingStrategy';
 import Step4ArbitrageStrategy from './steps/Step4ArbitrageStrategy';
 import ModuleSelector from './ModuleSelector';
@@ -30,9 +31,9 @@ const STEPS_OPTIMIERUNG = [
 const STEPS_LADEPROZESS = [
   { number: 1, label: 'Projektkontext' },
   { number: 2, label: 'Mobilitätsprofil' },
-  { number: 3, label: 'Depot' },
-  { number: 4, label: 'Ladeinfrastruktur' },
-  { number: 5, label: 'EV-Auswahl' },
+  { number: 3, label: 'EV-Auswahl' },
+  { number: 4, label: 'Depot' },
+  { number: 5, label: 'Ladeinfrastruktur' },
   { number: 6, label: 'Szenarien' },
 ];
 
@@ -206,9 +207,11 @@ export default function ProjectWizard() {
         )}
 
         {/* Ladeprozess module steps */}
-        {wizard.wizardModule === 'ladeprozess' && currentStep === 3 && <Step3Depot />}
-        {wizard.wizardModule === 'ladeprozess' && currentStep === 4 && <Step4Ladeinfrastruktur />}
-        {wizard.wizardModule === 'ladeprozess' && currentStep === 5 && <Step5EVSelection />}
+        {wizard.wizardModule === 'ladeprozess' && currentStep === 3 && (
+          <Step3LadeprozessEV onFinish={() => setWizardStep(4)} />
+        )}
+        {wizard.wizardModule === 'ladeprozess' && currentStep === 4 && <Step3Depot />}
+        {wizard.wizardModule === 'ladeprozess' && currentStep === 5 && <Step4Ladeinfrastruktur />}
         {wizard.wizardModule === 'ladeprozess' && currentStep === 6 && <Step6Scenarios />}
 
         {/* Ladeprozess Optimierung module steps (6-step flow, Szenarien skipped) */}

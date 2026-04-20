@@ -209,6 +209,48 @@ router.post('/upload', uploadSingle, async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/routes/copy - Copy routes from one project to another
+router.post('/copy', async (req: Request, res: Response) => {
+  try {
+    const { source_project_id, target_project_id } = req.body;
+    if (!source_project_id || !target_project_id) {
+      return res.status(400).json({ error: 'source_project_id and target_project_id are required' });
+    }
+
+    const sourceRoutes = await query<Route>(
+      'SELECT * FROM routes WHERE project_id = $1',
+      [source_project_id]
+    );
+
+    let copied = 0;
+    for (const r of sourceRoutes.rows) {
+      const newId = uuidv4();
+      await query(
+        `INSERT INTO routes (id, project_id, vehicle_id, route_id, date, start_time, end_time,
+          distance_km, stops, dwell_time_min, avg_speed_kmh, payload_kg, depot_id,
+          start_location, end_location, elevation_gain_m, outside_temperature_c, source_type,
+          consumption_l_100km, vehicle_count, trips_per_year,
+          sim_temperature_c, sim_hvac_on, sim_city_share, sim_rural_share, sim_hwy_share)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+        [
+          newId, target_project_id, r.vehicle_id, r.route_id, r.date,
+          r.start_time, r.end_time, r.distance_km, r.stops, r.dwell_time_min,
+          r.avg_speed_kmh, r.payload_kg, r.depot_id, r.start_location, r.end_location,
+          r.elevation_gain_m, r.outside_temperature_c, r.source_type,
+          r.consumption_l_100km, r.vehicle_count, r.trips_per_year,
+          r.sim_temperature_c, r.sim_hvac_on, r.sim_city_share, r.sim_rural_share, r.sim_hwy_share,
+        ]
+      );
+      copied++;
+    }
+
+    res.json({ data: { copied } });
+  } catch (error) {
+    console.error('Error copying routes:', error);
+    res.status(500).json({ error: 'Failed to copy routes' });
+  }
+});
+
 // POST /api/routes/manual - Add manual route entries
 router.post('/manual', async (req: Request, res: Response) => {
   try {

@@ -397,6 +397,24 @@ export interface ReichweitenSimulationResult {
   created_at: string;
 }
 
+// Projects that used the Reichweiten module and have completed runs
+export function useReichweitenProjects() {
+  return useQuery({
+    queryKey: ['reichweiten-projects'],
+    queryFn: () => apiFetch<Project[]>('/reichweiten/completed-projects'),
+  });
+}
+
+export function useCopyRoutesToProject() {
+  return useMutation({
+    mutationFn: ({ source_project_id, target_project_id }: { source_project_id: string; target_project_id: string }) =>
+      apiFetch<{ copied: number }>('/routes/copy', {
+        method: 'POST',
+        body: JSON.stringify({ source_project_id, target_project_id }),
+      }),
+  });
+}
+
 export function useRunReichweitenSimulation() {
   return useMutation({
     mutationFn: ({ project_id, selected_ev_ids = [] }: { project_id: string; selected_ev_ids?: string[] }) =>

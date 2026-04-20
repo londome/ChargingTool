@@ -227,7 +227,7 @@ export default function Step4Ladeinfrastruktur() {
       </div>
 
       <div className="p-6 border-t border-slate-100 flex justify-between">
-        <Button variant="outline" type="button" onClick={() => setWizardStep(3)}>← Zurück</Button>
+        <Button variant="outline" type="button" onClick={() => setWizardStep(wizard.wizardModule === 'ladeprozess' ? 4 : 3)}>← Zurück</Button>
         <Button type="submit">Weiter zu EV-Auswahl →</Button>
       </div>
     </form>

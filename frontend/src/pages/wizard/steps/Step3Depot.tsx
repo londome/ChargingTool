@@ -324,7 +324,7 @@ export default function Step3Depot() {
       </div>
 
       <div className="p-6 border-t border-slate-100 flex justify-between">
-        <Button variant="outline" type="button" onClick={() => setWizardStep(2)}>← Zurück</Button>
+        <Button variant="outline" type="button" onClick={() => setWizardStep(wizard.wizardModule === 'ladeprozess' ? 3 : 2)}>← Zurück</Button>
         <Button type="submit">Weiter zu Ladeinfrastruktur →</Button>
       </div>
     </form>

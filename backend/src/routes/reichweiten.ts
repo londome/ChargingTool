@@ -118,4 +118,23 @@ router.get('/project/:projectId/latest', async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/reichweiten/completed-projects
+// Returns all projects that have at least one completed Reichweiten run
+router.get('/completed-projects', async (req: Request, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT DISTINCT p.id, p.name, p.fleet_type, p.industry, p.depot_location, p.created_at,
+              rr.completed_at as last_run_at
+       FROM projects p
+       JOIN reichweiten_runs rr ON rr.project_id = p.id
+       WHERE rr.status = 'completed' AND p.wizard_module = 'reichweiten'
+       ORDER BY rr.completed_at DESC`,
+      []
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch Reichweiten projects' });
+  }
+});
+
 export default router;

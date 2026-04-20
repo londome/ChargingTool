@@ -78,6 +78,10 @@ export interface WizardState {
   reichweitenSimParams: ReichweitenSimParams;
   projectId: string | null;
   fleetId: string | null;
+  // Ladeprozess: optional reuse of a previous Reichweiten analysis
+  reuseReichweitenProjectId: string | null;
+  // Ladeprozess Step 3: run ID from the Zwischenergebnisse simulation
+  ladeprozessReichweitenRunId: string | null;
 }
 
 interface ProjectStore {
@@ -111,6 +115,8 @@ interface ProjectStore {
   updateWizardStep6: (scenarios: Partial<Scenario>[]) => void;
   setWizardProjectId: (id: string) => void;
   setWizardFleetId: (id: string) => void;
+  setReuseReichweitenProjectId: (id: string | null) => void;
+  setLadeprozessReichweitenRunId: (id: string | null) => void;
   resetWizard: () => void;
 
   // Depot Lastgang (load profile)
@@ -170,6 +176,8 @@ const initialWizardState: WizardState = {
   },
   projectId: null,
   fleetId: null,
+  reuseReichweitenProjectId: null,
+  ladeprozessReichweitenRunId: null,
 };
 
 export const useProjectStore = create<ProjectStore>()(
@@ -223,6 +231,12 @@ export const useProjectStore = create<ProjectStore>()(
       })),
       setWizardFleetId: (id) => set((state) => ({
         wizard: { ...state.wizard, fleetId: id },
+      })),
+      setReuseReichweitenProjectId: (id) => set((state) => ({
+        wizard: { ...state.wizard, reuseReichweitenProjectId: id },
+      })),
+      setLadeprozessReichweitenRunId: (id) => set((state) => ({
+        wizard: { ...state.wizard, ladeprozessReichweitenRunId: id },
       })),
       resetWizard: () => set({ wizard: initialWizardState }),
 
