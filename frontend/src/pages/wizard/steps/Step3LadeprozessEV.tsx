@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Check, Zap, Package, Battery, Gauge, CheckCircle2, XCircle,
-  AlertTriangle, Loader2,
+  AlertTriangle, Loader2, ExternalLink,
 } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
 import { useEVModels, useRunReichweitenSimulation, useReichweitenLatest } from '@/lib/api';
@@ -23,6 +24,7 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
     wizard, setWizardStep, setWizardSelectedEVs,
     setLadeprozessReichweitenRunId,
   } = useProjectStore();
+  const navigate = useNavigate();
 
   const { data: evModels, isLoading } = useEVModels();
   const runSim = useRunReichweitenSimulation();
@@ -282,13 +284,25 @@ export default function Step3LadeprozessEV({ onFinish }: Props) {
                 </div>
               </div>
 
-              {/* EV model used */}
-              {selectedEVResult && (
-                <div className="text-xs text-slate-500 flex items-center gap-1">
-                  <Zap className="h-3 w-3 text-[#0079C0]" />
-                  Analyse basiert auf: <span className="font-medium text-[#001141]">{selectedEVResult.ev_model_name}</span>
-                </div>
-              )}
+              {/* EV model used + link to full results */}
+              <div className="flex items-center justify-between">
+                {selectedEVResult && (
+                  <div className="text-xs text-slate-500 flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-[#0079C0]" />
+                    Analyse basiert auf: <span className="font-medium text-[#001141]">{selectedEVResult.ev_model_name}</span>
+                  </div>
+                )}
+                {wizard.projectId && !wizard.projectId.startsWith('local_') && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/projekte/${wizard.projectId}/ergebnisse/reichweiten`)}
+                    className="flex items-center gap-1 text-xs text-[#0079C0] hover:underline underline-offset-2"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Detaillierte Analyse &amp; PDF
+                  </button>
+                )}
+              </div>
 
               {/* Route list (max 10 shown) */}
               {selectedEVResult && selectedEVResult.route_results.length > 0 && (
