@@ -402,6 +402,8 @@ export function useReichweitenProjects() {
   return useQuery({
     queryKey: ['reichweiten-projects'],
     queryFn: () => apiFetch<Project[]>('/reichweiten/completed-projects'),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 

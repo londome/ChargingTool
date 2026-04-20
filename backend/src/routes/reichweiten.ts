@@ -123,12 +123,13 @@ router.get('/project/:projectId/latest', async (req: Request, res: Response) => 
 router.get('/completed-projects', async (req: Request, res: Response) => {
   try {
     const result = await query(
-      `SELECT DISTINCT p.id, p.name, p.fleet_type, p.industry, p.depot_location, p.created_at,
-              rr.completed_at as last_run_at
+      `SELECT p.id, p.name, p.fleet_type, p.industry, p.depot_location, p.created_at,
+              MAX(rr.completed_at) as last_run_at
        FROM projects p
        JOIN reichweiten_runs rr ON rr.project_id = p.id
-       WHERE rr.status = 'completed' AND p.wizard_module = 'reichweiten'
-       ORDER BY rr.completed_at DESC`,
+       WHERE rr.status = 'completed'
+       GROUP BY p.id, p.name, p.fleet_type, p.industry, p.depot_location, p.created_at
+       ORDER BY MAX(rr.completed_at) DESC`,
       []
     );
     res.json({ data: result.rows });
