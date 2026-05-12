@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { query } from '../database/db';
 import { fetchDayAheadPrices, fetchDayAheadPricesPeriod } from '../services/entsoePrices';
 import { solveChargingOptimization, ChargingVehicle } from '../optimization/lpCharging';
+import { buildVehiclePhysics, simulateRange, UsageMix } from '../simulation/physicsEngine';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.post('/run', async (req: Request, res: Response) => {
       arrival_time,       // optional override; if absent, read from routes
       departure_time,     // optional override; if absent, read from routes
       selected_ev_ids,    // string[] from wizard Step 5
+      depot_profile_kw,   // optional 96-value depot background load [kW]
     } = req.body;
 
     if (!project_id) {
@@ -65,7 +67,7 @@ router.post('/run', async (req: Request, res: Response) => {
         );
 
         if (!fleetsResult.rows.length) {
-          throw new Error('Keine Flottendaten für dieses Projekt gefunden. Bitte den Wizard abschließen.');
+          console.warn('No fleet vehicles found, continuing with route-based vehicle list');
         }
 
         // ── EV specs ─────────────────────────────────────────────────────────────
@@ -93,104 +95,94 @@ router.post('/run', async (req: Request, res: Response) => {
         }
         const maxChargeKw = Math.min(wallbox_power_kw, evMaxChargePower);
 
-        // ── Arrival/departure times from routes ───────────────────────────────────
-        // routes.start_time = departure (Abfahrt), routes.end_time = arrival at depot (Ankunft)
-        // Use the earliest start_time and latest end_time across all routes of the project.
-        const routeTimesResult = await query<{
-          min_start: string | null; max_end: string | null;
+        // ── Load routes with per-route times and vehicle_count ───────────────────
+        const routesResult = await query<{
+          route_id: string; distance_km: number; vehicle_count: number;
+          start_time: string | null; end_time: string | null; trips_per_year: number;
+          sim_temperature_c: number | null; sim_hvac_on: boolean | null;
+          sim_city_share: number | null; sim_rural_share: number | null; sim_hwy_share: number | null;
+          outside_temperature_c: number | null; avg_speed_kmh: number | null; payload_kg: number | null;
         }>(
-          `SELECT MIN(start_time::text) as min_start, MAX(end_time::text) as max_end
-           FROM routes WHERE project_id = $1`,
+          `SELECT route_id, distance_km, COALESCE(vehicle_count, 1) as vehicle_count,
+                  start_time, end_time, COALESCE(trips_per_year, 250) as trips_per_year,
+                  sim_temperature_c, sim_hvac_on, sim_city_share, sim_rural_share, sim_hwy_share,
+                  outside_temperature_c, avg_speed_kmh, payload_kg
+           FROM routes WHERE project_id = $1 ORDER BY route_id`,
           [project_id]
         );
 
-        const resolvedDepartureTime: string =
-          departure_time ??
-          (routeTimesResult.rows[0]?.min_start
-            ? routeTimesResult.rows[0].min_start.substring(0, 5)
-            : '07:00');
-
-        const resolvedArrivalTime: string =
-          arrival_time ??
-          (routeTimesResult.rows[0]?.max_end
-            ? routeTimesResult.rows[0].max_end.substring(0, 5)
-            : '17:00');
-
-        // ── SOC on arrival from route energy consumption ──────────────────────────
-        // Strategy 1: use route_results from a previous simulation (ev_energy_kwh is annual → /trips_per_year)
-        // Strategy 2 (fallback): compute directly from routes.distance_km × EV nominal consumption
-        const routeEnergyResult = await query<{
-          ev_energy_kwh: number; trips_per_year: number;
-        }>(
-          `SELECT rr.ev_energy_kwh, r.trips_per_year
-           FROM route_results rr
-           JOIN simulation_runs sr ON sr.id = rr.simulation_run_id
-           JOIN routes r ON r.project_id = sr.project_id AND r.route_id = rr.route_id
-           WHERE sr.project_id = $1
-           ORDER BY sr.started_at DESC`,
-          [project_id]
-        );
-
-        let dailyEnergyKwh = 0;
-        if (routeEnergyResult.rows.length > 0) {
-          // Use simulation results (more accurate)
-          for (const r of routeEnergyResult.rows) {
-            const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
-            const annualKwh = parseFloat(String(r.ev_energy_kwh)) || 0;
-            dailyEnergyKwh += annualKwh / tripsPerYear;
-          }
-        } else {
-          // Fallback: estimate from route distances × EV nominal consumption
-          const routeDistResult = await query<{
-            distance_km: number; trips_per_year: number;
-          }>(
-            `SELECT distance_km, trips_per_year FROM routes WHERE project_id = $1`,
-            [project_id]
-          );
-          for (const r of routeDistResult.rows) {
-            const dist = parseFloat(String(r.distance_km)) || 0;
-            const tripsPerYear = parseFloat(String(r.trips_per_year)) || 1;
-            // Energy per trip = distance × consumption/100; daily = per trip (1 trip/day assumption)
-            dailyEnergyKwh += (dist * nominalConsumptionKwh100km) / 100;
-          }
+        if (!routesResult.rows.length) {
+          throw new Error('Keine Routendaten für dieses Projekt gefunden. Bitte den Wizard abschließen.');
         }
 
-        const socDropPct = batteryKwh > 0 ? (dailyEnergyKwh / batteryKwh) * 100 : 0;
-        const rawSocArrival = soc_target_pct - socDropPct;
-        const computedSocArrival = Math.max(0, Math.min(soc_target_pct, rawSocArrival));
+        // ── Build ChargingVehicle list — one entry per vehicle per route ──────────
+        let vehicleCounter = 0;
+        let totalSocArrivalWarning: string | null = null;
+        let hasSocWarning = false;
 
-        // ── SOC arrival warning ───────────────────────────────────────────────────
-        const socArrivalBelowMin = rawSocArrival < soc_min_pct;
-        const socArrivalWarning = socArrivalBelowMin
-          ? `⚠️ SOC bei Ankunft (${rawSocArrival.toFixed(1)} %) liegt unter dem definierten Minimum (${soc_min_pct} %). ` +
-            `Die Flotte verbraucht ${dailyEnergyKwh.toFixed(1)} kWh/Tag bei einer Batteriekapazität von ${batteryKwh} kWh. ` +
-            `Prüfe ob die Fahrzeugreichweite für die definierten Touren ausreicht.`
-          : null;
+        const vehicles: ChargingVehicle[] = routesResult.rows.flatMap((route) => {
+          const count = Math.max(1, Number(route.vehicle_count) || 1);
 
-        // ── Build ChargingVehicle list ────────────────────────────────────────────
-        const arrivalInterval = timeToInterval(resolvedArrivalTime);
-        const departureInterval = timeToInterval(resolvedDepartureTime);
+          // Per-route arrival/departure
+          const routeArrival   = arrival_time   ?? (route.end_time   ? route.end_time.substring(0, 5)   : '17:00');
+          const routeDeparture = departure_time ?? (route.start_time ? route.start_time.substring(0, 5) : '07:00');
 
-        const effectiveDepartureInterval =
-          departureInterval <= arrivalInterval
-            ? departureInterval + 96
-            : departureInterval;
-        const clampedDeparture = Math.min(effectiveDepartureInterval, 96);
+          const arrInterval  = timeToInterval(routeArrival);
+          const deptInterval = timeToInterval(routeDeparture);
+          const effectiveDept = deptInterval <= arrInterval ? deptInterval + 96 : deptInterval;
+          const clampedDept  = Math.min(effectiveDept, 96);
 
-        const vehicles: ChargingVehicle[] = fleetsResult.rows.map((row, idx) => ({
-          id: String(row.id),
-          name: evName
-            ? `${evName} #${idx + 1}`
-            : `Fahrzeug ${idx + 1} (${row.segment || 'EV'})`,
-          battery_kwh:         batteryKwh,
-          max_charge_power_kw: maxChargeKw,
-          charging_efficiency: 0.92,
-          soc_arrival_pct:     computedSocArrival,
-          soc_target_pct,
-          soc_min_pct,
-          arrival_interval:   Math.max(0, Math.min(arrivalInterval, 95)),
-          departure_interval: Math.max(1, Math.min(clampedDeparture, 96)),
-        }));
+          // Per-route SOC on arrival — use physicsEngine with per-route sim conditions
+          const dist = parseFloat(String(route.distance_km)) || 0;
+          const routeMix: UsageMix = {
+            city_share:  route.sim_city_share  ?? 0.5,
+            rural_share: route.sim_rural_share ?? 0.3,
+            hwy_share:   route.sim_hwy_share   ?? 0.2,
+          };
+          const routeTemp = route.sim_temperature_c ?? route.outside_temperature_c ?? 15;
+          const routeHvac = route.sim_hvac_on ?? false;
+          let effectiveConsumption = nominalConsumptionKwh100km;
+          if (batteryKwh > 0 && evName) {
+            try {
+              const vp = buildVehiclePhysics(batteryKwh, nominalConsumptionKwh100km, 'medium_van', route.payload_kg ?? 0);
+              effectiveConsumption = simulateRange(vp, routeMix, routeTemp, routeHvac).consumption_kwh_per_100km;
+            } catch { /* fallback to nominal */ }
+          }
+          const energyKwh = (dist * effectiveConsumption) / 100;
+          const socDrop   = batteryKwh > 0 ? (energyKwh / batteryKwh) * 100 : 0;
+          const rawSocArr   = soc_target_pct - socDrop;
+          const socArrival  = Math.max(0, Math.min(soc_target_pct, rawSocArr));
+
+          if (rawSocArr < soc_min_pct && !hasSocWarning) {
+            hasSocWarning = true;
+            totalSocArrivalWarning =
+              `⚠️ SOC bei Ankunft (${rawSocArr.toFixed(1)} %) liegt unter dem Minimum (${soc_min_pct} %). ` +
+              `Route ${route.route_id}: ${dist} km × ${nominalConsumptionKwh100km} kWh/100km = ${energyKwh.toFixed(1)} kWh ` +
+              `bei ${batteryKwh} kWh Batterie.`;
+          }
+
+          return Array.from({ length: count }, (_, vi) => {
+            vehicleCounter++;
+            return {
+              id: `${route.route_id}_v${vi}`,
+              name: evName
+                ? `${evName} – Tour ${route.route_id}${count > 1 ? ` #${vi + 1}` : ''}`
+                : `Fahrzeug ${vehicleCounter} – Tour ${route.route_id}`,
+              battery_kwh:         batteryKwh,
+              max_charge_power_kw: maxChargeKw,
+              charging_efficiency: 0.92,
+              soc_arrival_pct:     socArrival,
+              soc_target_pct,
+              soc_min_pct,
+              arrival_interval:    Math.max(0, Math.min(arrInterval, 95)),
+              departure_interval:  Math.max(1, Math.min(clampedDept, 96)),   // used by LP solver (overnight-adjusted)
+              departure_interval_raw: Math.max(0, Math.min(deptInterval, 95)), // raw 0-95 for Gantt display
+            };
+          });
+        });
+
+        const computedSocArrival = vehicles[0]?.soc_arrival_pct ?? soc_target_pct;
+        const socArrivalWarning  = totalSocArrivalWarning;
 
         // 3. Determine if multi-day
         const dateTo = date_to ? new Date(date_to) : null;
@@ -210,6 +202,7 @@ router.post('/run', async (req: Request, res: Response) => {
               prices_15min: dayPrices.prices_15min,
               gcp_max_kw,
               date: dayPrices.date,
+              depot_profile_kw,
             });
             totalCostEur += dayOptResult.total_cost_eur ?? 0;
             totalEnergyKwh += dayOptResult.total_energy_kwh ?? 0;
@@ -255,6 +248,7 @@ router.post('/run', async (req: Request, res: Response) => {
             prices_15min: pricesResult.prices_15min,
             gcp_max_kw,
             date: optimizationDate.toISOString().split('T')[0],
+            depot_profile_kw,
           });
 
           await query(

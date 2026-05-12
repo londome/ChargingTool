@@ -10,16 +10,20 @@ import {
 } from '../../../shared/types';
 
 import {
-  calculateAdjustedConsumption,
   calculateEnergyPerTour,
   calculateSocAfterTour,
   calculateGridEnergy,
   calculateElectricityCost,
   calculateEvCO2e,
-  buildConsumptionFactors,
   calculateAnnualEnergy,
   calculateEvTCO,
 } from './evCalculator';
+
+import {
+  buildVehiclePhysics,
+  simulateRange,
+  UsageMix,
+} from './physicsEngine';
 
 import {
   calculateFuelConsumption,
@@ -200,14 +204,23 @@ export async function runSimulation(
       feasible_with = feasResult.status === FeasibilityStatus.FEASIBLE_WITH_CHARGING || feasible_without;
       required_charge_kwh = feasResult.energy_required_kwh;
 
-      // ENERGY COST: derived from ev_model nominal consumption × route distance × correction factors.
-      // This is the EV equivalent of ICE: consumption_l_100km × distance.
-      const factors = buildConsumptionFactors(
-        route.payload_kg, bestMatch.ev_model.payload_kg ?? 1000,
-        route.outside_temperature_c, route.avg_speed_kmh, route.elevation_gain_m
+      // ENERGY COST: physicsEngine with per-route sim conditions (temperature, HVAC, usage mix).
+      // Falls back to route.outside_temperature_c and calibration defaults when sim_* not set.
+      const routeMix: UsageMix = {
+        city_share:  route.sim_city_share  ?? 0.5,
+        rural_share: route.sim_rural_share ?? 0.3,
+        hwy_share:   route.sim_hwy_share   ?? 0.2,
+      };
+      const routeTemp  = route.sim_temperature_c  ?? route.outside_temperature_c ?? 15;
+      const routeHvac  = route.sim_hvac_on        ?? false;
+      const vehiclePhysics = buildVehiclePhysics(
+        bestMatch.ev_model.battery_usable_kwh,
+        bestMatch.ev_model.nominal_consumption_kwh_100km,
+        bestMatch.ev_model.segment ?? vehicle.segment,
+        route.payload_kg ?? 0
       );
-      const ec_adj = calculateAdjustedConsumption(bestMatch.ev_model.nominal_consumption_kwh_100km, factors);
-      ev_energy_kwh = calculateEnergyPerTour(route.distance_km, ec_adj);
+      const physResult = simulateRange(vehiclePhysics, routeMix, routeTemp, routeHvac);
+      ev_energy_kwh = calculateEnergyPerTour(route.distance_km, physResult.consumption_kwh_per_100km);
 
       const grid_energy = calculateGridEnergy(ev_energy_kwh, scenario.charging_efficiency);
       const ev_trip_cost = calculateElectricityCost(grid_energy, scenario.electricity_price);

@@ -249,6 +249,10 @@ export default function EVLastgangChart({
       strokeDash: dash,
       groupIdx,
       slots: powerSlots, socs: socSlots, batteryKwh, socAtArrival,
+      arrivalSlot: arrival,
+      departureSlot: deptSlot,
+      arrivalTime: tour.endTime ?? null,
+      departureTime: tour.startTime ?? null,
     };
   });
 
@@ -263,7 +267,11 @@ export default function EVLastgangChart({
     tourProfiles.forEach((p, i) => { point[`t${i}`] = p.slots[slot]; });
     point.total_kw = tourProfiles.reduce((s, p) => s + (Number(p.slots[slot]) || 0), 0);
     point.total_kw_fill = point.total_kw; // mirror for Area fill (keeps Line tooltip as plain number)
-    if (hasLastgang) point.depot_kw = depotMap.get(time) ?? 0;
+    if (hasLastgang) {
+      const depot = depotMap.get(time) ?? 0;
+      point.depot_kw = depot;
+      point.combined_kw = depot + (point.total_kw as number);
+    }
     return point;
   });
 
@@ -419,6 +427,109 @@ export default function EVLastgangChart({
           </ResponsiveContainer>
         </div>
 
+        {/* ── Gantt: Lade- & Standzeiten ─────────────────────────────────── */}
+        {tourProfiles.length > 0 && (() => {
+          const ROW_H   = 20;
+          const LABEL_W = 70;
+          const BAR_W   = 860;   // viewBox units for the timeline area
+          const TICK_H  = 20;
+          const VB_W    = LABEL_W + BAR_W;
+          const n       = tourProfiles.length;
+          const VB_H    = TICK_H + n * ROW_H + 4;
+          const HOURS   = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+
+          const slotX = (s: number) => LABEL_W + (s / TOTAL_SLOTS) * BAR_W;
+
+          return (
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-1">
+                Ankunft &amp; Abfahrt je Fahrzeug (Ladefenster)
+              </p>
+              <svg
+                viewBox={`0 0 ${VB_W} ${VB_H}`}
+                width="100%"
+                style={{ display: 'block', maxHeight: n > 14 ? 320 : undefined }}
+                preserveAspectRatio="none"
+              >
+                {/* background */}
+                <rect x={0} y={0} width={VB_W} height={VB_H} fill="#f8fafc" rx={4} />
+
+                {/* hour grid + tick labels */}
+                {HOURS.map(h => {
+                  const x = LABEL_W + (h / 24) * BAR_W;
+                  return (
+                    <g key={h}>
+                      <line x1={x} y1={TICK_H} x2={x} y2={VB_H} stroke="#e2e8f0" strokeWidth={0.8} />
+                      <text x={x} y={TICK_H - 4} textAnchor="middle" fontSize={8} fill="#94a3b8">
+                        {String(h).padStart(2, '0')}:00
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* rows */}
+                {tourProfiles.map((p, ri) => {
+                  const y        = TICK_H + ri * ROW_H;
+                  const arrSlot  = p.arrivalSlot;
+                  const deptEff  = p.departureSlot >= TOTAL_SLOTS ? TOTAL_SLOTS : p.departureSlot;
+                  const overnight = deptEff <= arrSlot && deptEff < TOTAL_SLOTS;
+                  const segments  = overnight
+                    ? [{ from: arrSlot, to: TOTAL_SLOTS }, { from: 0, to: deptEff }]
+                    : [{ from: arrSlot, to: Math.max(arrSlot + 1, deptEff) }];
+                  const arrTime  = p.arrivalTime   ?? slotToTime(arrSlot);
+                  const deptTime = deptEff < TOTAL_SLOTS ? (p.departureTime ?? slotToTime(deptEff)) : null;
+
+                  return (
+                    <g key={p.id}>
+                      <rect x={0} y={y} width={VB_W} height={ROW_H}
+                        fill={ri % 2 === 0 ? '#f8fafc' : '#f1f5f9'} />
+                      <text x={4} y={y + ROW_H / 2 + 3} fontSize={9} fill="#64748b">{p.label}</text>
+                      {/* charging window bars */}
+                      {segments.map((seg, si) => (
+                        <rect key={si}
+                          x={slotX(seg.from)} y={y + 4}
+                          width={slotX(seg.to) - slotX(seg.from)} height={ROW_H - 8}
+                          fill={p.color} opacity={0.72} rx={2} />
+                      ))}
+                      {/* arrival marker */}
+                      <line x1={slotX(arrSlot)} y1={y + 2} x2={slotX(arrSlot)} y2={y + ROW_H - 2}
+                        stroke="#0f172a" strokeWidth={1.5} />
+                      <text x={slotX(arrSlot)} y={y + 10} textAnchor="middle" fontSize={7} fill="#0f172a">
+                        ↓{arrTime}
+                      </text>
+                      {/* departure marker */}
+                      {deptTime && (
+                        <>
+                          <line x1={slotX(deptEff)} y1={y + 2} x2={slotX(deptEff)} y2={y + ROW_H - 2}
+                            stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 2" />
+                          <text x={slotX(deptEff)} y={y + 10} textAnchor="middle" fontSize={7} fill="#dc2626">
+                            ↑{deptTime}
+                          </text>
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+              </svg>
+
+              <div className="flex items-center gap-4 mt-1 text-[10px] text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <svg width="14" height="8"><rect x={0} y={1} width={14} height={6} fill="#3b82f6" opacity={0.7} rx={1}/></svg>
+                  Ladefenster
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="10" height="10"><line x1={5} y1={0} x2={5} y2={10} stroke="#0f172a" strokeWidth={1.5}/></svg>
+                  Ankunft ↓
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="10" height="10"><line x1={5} y1={0} x2={5} y2={10} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 2"/></svg>
+                  Abfahrt ↑
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* SoC chart */}
         {tourProfiles.length > 0 && (
           <div>
@@ -488,14 +599,57 @@ export default function EVLastgangChart({
                 <XAxis dataKey="time" tick={{ fontSize: 10 }} interval={Math.max(1, Math.round(60 / lastgangProfile!.resolution_min)) - 1}
                   tickFormatter={t => t.endsWith(':00') ? t : ''} />
                 <YAxis unit=" kW" tick={{ fontSize: 10 }} width={52} />
-                <Tooltip formatter={(val: number, name: string) => [`${Number(val).toFixed(1)} kW`, name === 'depot_kw' ? 'Bestandslast Depot' : 'EV-Laden (Flotte)']} labelFormatter={l => `${l} Uhr`} />
-                <Area type="monotone" dataKey="depot_kw" stackId="load" fill="#dbeafe" stroke="#3b82f6" strokeWidth={1.5} name="depot_kw" />
-                <Area type="stepAfter" dataKey="total_kw" stackId="load" fill="#fed7aa" stroke="#f97316" strokeWidth={1.5} name="total_kw" />
+                <Tooltip
+                  content={({ active, label, payload }) => {
+                    if (!active || !payload) return null;
+                    const depot    = payload.find(p => p.dataKey === 'depot_kw');
+                    const ev       = payload.find(p => p.dataKey === 'total_kw');
+                    const combined = payload.find(p => p.dataKey === 'combined_kw');
+                    return (
+                      <div className="bg-white border border-slate-200 rounded p-2.5 text-xs shadow-md min-w-[180px]">
+                        <p className="font-semibold text-slate-700 mb-1.5">{label} Uhr</p>
+                        {depot && <div className="flex justify-between gap-3 text-blue-600"><span>Bestandslast Depot:</span><span>{Number(depot.value).toFixed(1)} kW</span></div>}
+                        {ev && evPeak > 0 && <div className="flex justify-between gap-3 text-orange-600"><span>EV-Laden (Flotte):</span><span>{Number(ev.value).toFixed(1)} kW</span></div>}
+                        {combined && evPeak > 0 && <div className="flex justify-between gap-3 font-semibold text-emerald-700 border-t border-slate-100 pt-1 mt-1"><span>Aggregiert (GCP):</span><span>{Number(combined.value).toFixed(1)} kW</span></div>}
+                      </div>
+                    );
+                  }}
+                  labelFormatter={l => `${l} Uhr`}
+                />
+                {/* Depot base load — always shown */}
+                <Area type="monotone" dataKey="depot_kw" fill="#dbeafe" stroke="#3b82f6" strokeWidth={1.5} dot={false} legendType="none" isAnimationActive={false} />
+                {/* EV load — only when there's actual EV charging */}
+                {evPeak > 0 && (
+                  <Area type="stepAfter" dataKey="total_kw" fill="#fed7aa" stroke="#f97316" strokeWidth={1.5} dot={false} legendType="none" isAnimationActive={false} />
+                )}
+                {/* Aggregated line: depot + EV — only when EV data exists */}
+                {evPeak > 0 && (
+                  <Line type="monotone" dataKey="combined_kw" stroke="#059669" strokeWidth={2}
+                    dot={false} legendType="none" isAnimationActive={false} strokeDasharray="0" />
+                )}
                 <ReferenceLine y={gridLimit} stroke="#ef4444" strokeDasharray="6 3" strokeWidth={1.5}
                   label={{ value: `Netzlimit ${gridLimit} kW`, position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
-                <Legend formatter={v => v === 'depot_kw' ? 'Bestandslast Depot' : 'EV-Laden (Flotte)'} wrapperStyle={{ fontSize: 11 }} />
               </ComposedChart>
             </ResponsiveContainer>
+            {/* Manual legend */}
+            <div className="flex flex-wrap items-center gap-4 mt-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-blue-200 border border-blue-400" />
+                <span className="text-slate-500">Bestandslast Depot</span>
+              </div>
+              {evPeak > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-orange-200 border border-orange-400" />
+                  <span className="text-slate-500">EV-Laden (Flotte)</span>
+                </div>
+              )}
+              {evPeak > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-0.5 bg-emerald-600" />
+                  <span className="text-emerald-700 font-medium">Aggregierte Leistung (GCP)</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

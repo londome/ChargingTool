@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import {
   ComposedChart, AreaChart, LineChart, BarChart,
   Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -80,6 +81,7 @@ export default function OptimizationResults() {
 
   const pid = projectId || activeProject?.id;
   const latestQuery = useOptimizationLatest(pid);
+  const [selectedVehicles, setSelectedVehicles] = useState<Set<string> | null>(null); // null = all
 
   const latestData = latestQuery.data;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,12 +100,15 @@ export default function OptimizationResults() {
   const socTarget: number = wizard?.step4?.soc_target ?? 80;
   const socMin: number = wizard?.step4?.soc_min ?? 20;
 
-  // Build chart data for price + fleet power (optimized + naive)
+  // Build chart data for price + fleet power (optimized + naive + depot)
+  const hasDepot = !!(results?.depot_profile_kw?.length === 96);
   const priceFleetData = TIME_LABELS.map((time, i) => ({
     time,
     price_eurkwh: results?.prices_15min?.[i] ?? 0,
     fleet_kw: results?.fleet_power_kw?.[i] ?? 0,
     naive_kw: results?.naive_fleet_power_kw?.[i] ?? 0,
+    depot_kw: results?.depot_profile_kw?.[i] ?? 0,
+    total_kw: (results?.fleet_power_kw?.[i] ?? 0) + (results?.depot_profile_kw?.[i] ?? 0),
   }));
 
   // Kostenvergleich: Optimiert vs Sofortladen
@@ -428,12 +433,73 @@ export default function OptimizationResults() {
                 <Legend
                   formatter={(value) => value === 'fleet_kw' ? 'Flotten-Leistung [kW]' : 'Strompreis [ct/kWh]'}
                 />
-                <Bar yAxisId="right" dataKey="price_eurkwh" fill="#fde68a" opacity={0.7} name="price_eurkwh" />
-                <Line yAxisId="left" type="monotone" dataKey="fleet_kw" stroke="#16a34a" strokeWidth={2} dot={false} name="fleet_kw" />
+                <Bar yAxisId="left" dataKey="fleet_kw" fill="#16a34a" opacity={0.8} name="fleet_kw" />
+                <Line yAxisId="right" type="monotone" dataKey="price_eurkwh" stroke="#f59e0b" strokeWidth={2} dot={false} name="price_eurkwh" />
                 <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Gantt: Ankunft & Abfahrt */}
+          {!isPeriod && results?.vehicles && results.vehicles.length > 0 && (() => {
+            const ROW_H = 20; const LABEL_W = 80; const BAR_W = 860;
+            const TICK_H = 20; const VB_W = LABEL_W + BAR_W;
+            const n = results.vehicles.length; const VB_H = TICK_H + n * ROW_H + 4;
+            const HOURS = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+            const slotX = (s: number) => LABEL_W + (s / 96) * BAR_W;
+            const slotToTime = (s: number) => {
+              const m = s * 15;
+              return `${String(Math.floor(m / 60)).padStart(2,'0')}:${String(m % 60).padStart(2,'0')}`;
+            };
+            return (
+              <div className="bg-white rounded border border-slate-200 p-6">
+                <h2 className="text-sm font-normal text-[#001141] mb-3">Ankunft &amp; Abfahrt je Fahrzeug (Ladefenster)</h2>
+                <svg viewBox={`0 0 ${VB_W} ${VB_H}`} width="100%" style={{ display: 'block' }} preserveAspectRatio="none">
+                  <rect x={0} y={0} width={VB_W} height={VB_H} fill="#f8fafc" rx={4} />
+                  {HOURS.map(h => {
+                    const x = LABEL_W + (h / 24) * BAR_W;
+                    return (
+                      <g key={h}>
+                        <line x1={x} y1={TICK_H} x2={x} y2={VB_H} stroke="#e2e8f0" strokeWidth={0.8} />
+                        <text x={x} y={TICK_H - 4} textAnchor="middle" fontSize={8} fill="#94a3b8">{String(h).padStart(2,'0')}:00</text>
+                      </g>
+                    );
+                  })}
+                  {results.vehicles.map((vr, ri) => {
+                    const y       = TICK_H + ri * ROW_H;
+                    const arr     = vr.arrival_interval   ?? 68; // ~17:00 fallback
+                    // Use raw departure (0-95) so overnight vehicles show correct time (e.g. 06:00 not 96)
+                    const depEff  = vr.departure_interval_raw ?? (vr.departure_interval ?? 28);
+                    const overnight = depEff <= arr;
+                    const segs    = overnight
+                      ? [{ from: arr, to: 96 }, { from: 0, to: depEff }]
+                      : [{ from: arr, to: depEff > arr ? depEff : arr + 1 }];
+                    const color   = VEHICLE_COLORS[ri % VEHICLE_COLORS.length];
+                    return (
+                      <g key={vr.vehicle_id}>
+                        <rect x={0} y={y} width={VB_W} height={ROW_H} fill={ri % 2 === 0 ? '#f8fafc' : '#f1f5f9'} />
+                        <text x={4} y={y + ROW_H / 2 + 3} fontSize={9} fill="#64748b">{vr.vehicle_name}</text>
+                        {segs.map((seg, si) => (
+                          <rect key={si} x={slotX(seg.from)} y={y + 4}
+                            width={slotX(seg.to) - slotX(seg.from)} height={ROW_H - 8}
+                            fill={color} opacity={0.72} rx={2} />
+                        ))}
+                        <line x1={slotX(arr)} y1={y + 2} x2={slotX(arr)} y2={y + ROW_H - 2} stroke="#0f172a" strokeWidth={1.5} />
+                        <text x={slotX(arr)} y={y + 10} textAnchor="middle" fontSize={7} fill="#0f172a">↓{slotToTime(arr)}</text>
+                        <line x1={slotX(depEff)} y1={y + 2} x2={slotX(depEff)} y2={y + ROW_H - 2} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 2" />
+                        <text x={slotX(depEff)} y={y + 10} textAnchor="middle" fontSize={7} fill="#dc2626">↑{slotToTime(depEff)}{overnight ? ' (+1T)' : ''}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-400">
+                  <span className="flex items-center gap-1.5"><svg width="14" height="8"><rect x={0} y={1} width={14} height={6} fill="#2563eb" opacity={0.7} rx={1}/></svg>Ladefenster</span>
+                  <span className="flex items-center gap-1.5"><svg width="10" height="10"><line x1={5} y1={0} x2={5} y2={10} stroke="#0f172a" strokeWidth={1.5}/></svg>Ankunft ↓</span>
+                  <span className="flex items-center gap-1.5"><svg width="10" height="10"><line x1={5} y1={0} x2={5} y2={10} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 2"/></svg>Abfahrt ↑</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Per-vehicle charging schedule */}
           {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
@@ -472,7 +538,45 @@ export default function OptimizationResults() {
           {/* SOC curves */}
           {(isPeriod ? periodVehicleNames.length > 0 : results?.vehicles && results.vehicles.length > 0) && (
             <div className="bg-white rounded border border-slate-200 p-6">
-              <h2 className="text-sm font-normal text-[#001141] mb-4">SOC-Verlauf je Fahrzeug [%]</h2>
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h2 className="text-sm font-normal text-[#001141]">SOC-Verlauf je Fahrzeug [%]</h2>
+                {/* Vehicle filter chips */}
+                {!isPeriod && results && results.vehicles.length > 1 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setSelectedVehicles(null)}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${selectedVehicles === null ? 'bg-[#001141] text-white border-[#001141]' : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'}`}
+                    >
+                      Alle
+                    </button>
+                    {results.vehicles.map((vr, idx) => {
+                      const isSelected = selectedVehicles?.has(vr.vehicle_name) ?? false;
+                      return (
+                        <button
+                          key={vr.vehicle_name}
+                          onClick={() => {
+                            setSelectedVehicles(prev => {
+                              const base = prev ?? new Set(results.vehicles.map(v => v.vehicle_name));
+                              const next = new Set(base);
+                              if (next.has(vr.vehicle_name)) { next.delete(vr.vehicle_name); }
+                              else { next.add(vr.vehicle_name); }
+                              return next.size === results.vehicles.length ? null : next;
+                            });
+                          }}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors`}
+                          style={{
+                            backgroundColor: (selectedVehicles === null || isSelected) ? VEHICLE_COLORS[idx % VEHICLE_COLORS.length] + '22' : 'white',
+                            borderColor: VEHICLE_COLORS[idx % VEHICLE_COLORS.length],
+                            color: VEHICLE_COLORS[idx % VEHICLE_COLORS.length],
+                          }}
+                        >
+                          {vr.vehicle_name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={isPeriod ? allSocData : socData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -484,19 +588,15 @@ export default function OptimizationResults() {
                   />
                   <YAxis tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
                   <Tooltip formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]} />
-                  <Legend />
                   <ReferenceLine y={socTarget} stroke="#dc2626" strokeDasharray="4 2" label={{ value: `Ziel ${socTarget}%`, fontSize: 10, fill: '#dc2626' }} />
                   <ReferenceLine y={socMin} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: `Min ${socMin}%`, fontSize: 10, fill: '#f59e0b' }} />
-                  {(isPeriod ? periodVehicleNames : results!.vehicles.map(v => v.vehicle_name)).map((name, idx) => (
-                    <Line
-                      key={name}
-                      type="monotone"
-                      dataKey={name}
-                      stroke={VEHICLE_COLORS[idx % VEHICLE_COLORS.length]}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  ))}
+                  {(isPeriod ? periodVehicleNames : results!.vehicles.map(v => v.vehicle_name))
+                    .filter(name => selectedVehicles === null || selectedVehicles.has(name))
+                    .map((name, idx) => (
+                      <Line key={name} type="monotone" dataKey={name}
+                        stroke={VEHICLE_COLORS[idx % VEHICLE_COLORS.length]}
+                        strokeWidth={2} dot={false} />
+                    ))}
                   <Brush dataKey="time" height={20} stroke="#94a3b8" />
                 </LineChart>
               </ResponsiveContainer>
@@ -550,10 +650,18 @@ export default function OptimizationResults() {
                   <XAxis dataKey="time" tick={{ fontSize: 10 }} tickFormatter={(v, i) => i % 4 === 0 ? v : ''} interval={3} />
                   <YAxis tick={{ fontSize: 10 }} unit=" kW" />
                   <Tooltip formatter={(v: number, name: string) => [`${v.toFixed(1)} kW`, name === 'fleet_kw' ? 'Optimiert' : 'Sofortladen']} />
-                  <Legend formatter={(v) => v === 'fleet_kw' ? 'Optimiert [kW]' : 'Sofortladen [kW]'} />
+                  <Legend formatter={(v) => {
+                    if (v === 'fleet_kw') return 'EV optimiert [kW]';
+                    if (v === 'naive_kw') return 'Sofortladen [kW]';
+                    if (v === 'depot_kw') return 'Depot-Last [kW]';
+                    if (v === 'total_kw') return 'Gesamt (Depot+EV) [kW]';
+                    return v;
+                  }} />
                   <ReferenceLine y={latestData?.gcp_max_kw ?? 100} stroke="#dc2626" strokeDasharray="4 2" label={{ value: `GCP ${latestData?.gcp_max_kw ?? ''}kW`, fontSize: 10, fill: '#dc2626' }} />
                   <Area type="monotone" dataKey="naive_kw" stroke="#94a3b8" fill="#e2e8f0" fillOpacity={0.6} dot={false} name="naive_kw" />
+                  {hasDepot && <Area type="monotone" dataKey="depot_kw" stroke="#f59e0b" fill="#fef3c7" fillOpacity={0.5} dot={false} name="depot_kw" />}
                   <Area type="monotone" dataKey="fleet_kw" stroke="#16a34a" fill="#bbf7d0" fillOpacity={0.7} dot={false} name="fleet_kw" />
+                  {hasDepot && <Line type="monotone" dataKey="total_kw" stroke="#dc2626" strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="total_kw" />}
                   <Brush dataKey="time" height={20} stroke="#94a3b8" />
                 </ComposedChart>
               </ResponsiveContainer>

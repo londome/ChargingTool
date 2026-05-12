@@ -16,8 +16,9 @@ export interface ChargingVehicle {
   soc_arrival_pct: number;
   soc_target_pct: number;
   soc_min_pct: number;
-  arrival_interval: number;   // 0-95 (15-min slot index)
-  departure_interval: number; // 0-95 or 96
+  arrival_interval: number;        // 0-95 (15-min slot index)
+  departure_interval: number;      // 0-95 or 96 (LP solver — can be 96 for overnight)
+  departure_interval_raw?: number; // 0-95 display value passed through to result (Gantt)
 }
 
 export interface OptimizationInput {
@@ -25,6 +26,7 @@ export interface OptimizationInput {
   prices_15min: number[]; // 96 values in €/kWh
   gcp_max_kw: number;
   date: string;
+  depot_profile_kw?: number[]; // optional 96-value depot background load [kW]
 }
 
 export interface VehicleOptResult {
@@ -35,6 +37,9 @@ export interface VehicleOptResult {
   energy_kwh: number;        // grid energy drawn (incl. charging losses)
   battery_energy_kwh: number; // energy stored in battery (= route consumption)
   cost_eur: number;
+  arrival_interval?: number;
+  departure_interval?: number;
+  departure_interval_raw?: number; // 0-95 display value (departure_interval can be 96 for overnight)
 }
 
 export interface OptimizationResult {
@@ -42,9 +47,10 @@ export interface OptimizationResult {
   vehicles: VehicleOptResult[];
   total_cost_eur: number;
   total_energy_kwh: number;
-  fleet_power_kw: number[];         // 96 values — optimized
+  fleet_power_kw: number[];         // 96 values — optimized EV charging
   naive_fleet_power_kw: number[];   // 96 values — immediate (greedy) charging
   naive_total_cost_eur: number;     // cost if charging immediately on arrival
+  depot_profile_kw?: number[];      // 96 values — background depot load (if provided)
   computation_time_ms: number;
   date: string;
   prices_15min: number[];
@@ -96,7 +102,7 @@ const N_INTERVALS = 96;
  */
 export async function solveChargingOptimization(input: OptimizationInput): Promise<OptimizationResult> {
   const startTime = Date.now();
-  const { vehicles, prices_15min, gcp_max_kw, date } = input;
+  const { vehicles, prices_15min, gcp_max_kw, date, depot_profile_kw } = input;
 
   if (vehicles.length === 0) {
     return {
@@ -125,9 +131,12 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
     const variables: Record<string, Record<string, number>> = {};
     const constraints: Record<string, { min?: number; max?: number }> = {};
 
-    // GCP constraints: sum_v P[v,t] <= gcp_max_kw for each t
+    // GCP constraints: sum_v P[v,t] <= gcp_max_kw - depot_load[t] for each t
+    // If depot_profile_kw provided, reserve that headroom for existing depot load.
     for (let t = 0; t < N_INTERVALS; t++) {
-      constraints[`gcp_${t}`] = { max: gcp_max_kw };
+      const depotLoad = depot_profile_kw?.[t] ?? 0;
+      const available = Math.max(0, gcp_max_kw - depotLoad);
+      constraints[`gcp_${t}`] = { max: available };
     }
 
     // For each vehicle, add minimum energy constraint
@@ -202,6 +211,7 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
         fleet_power_kw: Array(96).fill(0),
         naive_fleet_power_kw,
         naive_total_cost_eur,
+        ...(depot_profile_kw ? { depot_profile_kw } : {}),
         computation_time_ms: Date.now() - startTime,
         date,
         prices_15min,
@@ -238,6 +248,9 @@ export async function solveChargingOptimization(input: OptimizationInput): Promi
         energy_kwh,
         battery_energy_kwh,
         cost_eur,
+        arrival_interval:        veh.arrival_interval,
+        departure_interval:      veh.departure_interval,
+        departure_interval_raw:  veh.departure_interval_raw,
       };
     });
 

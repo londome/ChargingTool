@@ -398,15 +398,15 @@ export default function ArbitrageResults() {
                     value === 'net_grid_kw' ? 'Netzleistung [kW]' : 'Strompreis [ct/kWh]'
                   }
                 />
-                <Bar yAxisId="right" dataKey="price_eurkwh" fill="#fde68a" opacity={0.7} name="price_eurkwh" />
+                <Bar yAxisId="left" dataKey="net_grid_kw" fill="#2563eb" opacity={0.8} name="net_grid_kw" />
                 <Line
-                  yAxisId="left"
+                  yAxisId="right"
                   type="monotone"
-                  dataKey="net_grid_kw"
-                  stroke="#2563eb"
+                  dataKey="price_eurkwh"
+                  stroke="#f59e0b"
                   strokeWidth={2}
                   dot={false}
-                  name="net_grid_kw"
+                  name="price_eurkwh"
                 />
                 <Brush dataKey="time" height={20} stroke="#94a3b8" />
               </ComposedChart>

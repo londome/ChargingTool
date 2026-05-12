@@ -23,7 +23,12 @@ export default function Step1ProjectContext() {
   const copyRoutes = useCopyRoutesToProject();
   const { data: reichweitenProjects } = useReichweitenProjects();
 
-  const isLadeprozess = wizard.wizardModule === 'ladeprozess';
+  const isLadeprozess = wizard.wizardModule === 'ladeprozess'
+    || wizard.wizardModule === 'ladeprozess_optimierung'
+    || wizard.wizardModule === 'ladeprozess_bidirektional';
+
+  // For ladeprozess, Depot is step 4; for optimierung/bidirektional, Depot is step 3
+  const depotStep = wizard.wizardModule === 'ladeprozess' ? 4 : 3;
 
   // Reuse state
   const [reuseEnabled, setReuseEnabled] = useState(false);
@@ -89,7 +94,7 @@ export default function Step1ProjectContext() {
       }
     }
 
-    // Reuse: copy routes and jump to Step 4 (Depot)
+    // Reuse: copy routes and jump to Depot step
     if (isLadeprozess && reuseEnabled && selectedReuseId && newProjectId && !newProjectId.startsWith('local_')) {
       setReuseReichweitenProjectId(selectedReuseId);
       try {
@@ -101,7 +106,7 @@ export default function Step1ProjectContext() {
       } catch (e) {
         console.warn('Route copy failed, continuing without reuse', e);
       }
-      setWizardStep(4);
+      setWizardStep(depotStep);
       return;
     }
 
@@ -268,7 +273,7 @@ export default function Step1ProjectContext() {
           {isPending
             ? 'Wird gespeichert…'
             : isReusing
-            ? 'Weiter zu Depot →'
+            ? `Weiter zu Schritt ${depotStep} (Depot) →`
             : 'Weiter zum Mobilitätsprofil →'}
         </Button>
       </div>

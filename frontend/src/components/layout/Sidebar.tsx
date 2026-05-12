@@ -79,47 +79,38 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
             <span>Reichweiten Analyse</span>
           </NavLink>
         </div>
-      ) : isOptimierungModule ? (
-        /* Ladeprozess Optimierung module: show dedicated results page */
-        <div className="mt-4">
-          <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
-            <BarChart3 className="h-3 w-3" /> Ergebnisse
-          </p>
-          <NavLink
-            to={`/projekte/${projectId}/ergebnisse/optimierung`}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-[#0079C0] text-white font-normal'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
-              )
-            }
-          >
-            <Zap className="h-4 w-4 shrink-0" />
-            <span>Ladeoptimierung</span>
-          </NavLink>
-        </div>
-      ) : isBidirektionalModule ? (
-        /* Bidirektional module: show only Energiearbitrage */
-        <div className="mt-4">
-          <p className="px-3 py-1 text-xs font-normal text-white/50 uppercase tracking-wider flex items-center gap-1.5">
-            <BarChart3 className="h-3 w-3" /> Ergebnisse
-          </p>
-          <NavLink
-            to={`/projekte/${projectId}/ergebnisse/arbitrage`}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-[#0079C0] text-white font-normal'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
-              )
-            }
-          >
-            <BatteryCharging className="h-4 w-4 shrink-0" />
-            <span>Energiearbitrage</span>
-          </NavLink>
+      ) : (isOptimierungModule || isBidirektionalModule) ? (
+        /* V1X / V2X: same Simulationsergebnisse sub-nav + module-specific result */
+        <div className={cn('mt-1 rounded', isResultsActive ? 'bg-white/10' : '')}>
+          <div className="flex items-center gap-3 px-3 py-2 text-xs font-normal text-white/50 uppercase tracking-wider">
+            <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+            <span>Simulationsergebnisse</span>
+          </div>
+          {[
+            { label: 'Kosten & Emissionen', href: `/projekte/${projectId}/ergebnisse`,           icon: BarChart3,       exact: true  },
+            { label: 'Tourenanalyse',       href: `/projekte/${projectId}/ergebnisse/touren`,    icon: Route,           exact: false },
+            { label: 'Referenzszenario', href: `/projekte/${projectId}/ergebnisse/ladevorgang`, icon: Zap, exact: false },
+            isOptimierungModule
+              ? { label: 'Ladeoptimierung', href: `/projekte/${projectId}/ergebnisse/optimierung`, icon: Zap,           exact: false }
+              : { label: 'Energiearbitrage',href: `/projekte/${projectId}/ergebnisse/arbitrage`,  icon: BatteryCharging, exact: false },
+          ].map((item) => (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              end={item.exact}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 pl-6 pr-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-[#0079C0] text-white font-normal'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                )
+              }
+            >
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </div>
       ) : (
       <div className={cn('mt-1 rounded', isResultsActive ? 'bg-white/10' : '')}>
@@ -130,7 +121,7 @@ function ProjectNavItems({ projectId }: { projectId: string }) {
         {[
           { label: 'Kosten & Emissionen', href: `/projekte/${projectId}/ergebnisse`, icon: BarChart3, exact: true },
           { label: 'Tourenanalyse', href: `/projekte/${projectId}/ergebnisse/touren`, icon: Route, exact: false },
-          { label: 'Ladevorgang', href: `/projekte/${projectId}/ergebnisse/ladevorgang`, icon: Zap, exact: false },
+          { label: 'Referenzszenario', href: `/projekte/${projectId}/ergebnisse/ladevorgang`, icon: Zap, exact: false },
         ].map((item) => (
           <NavLink
             key={item.href}

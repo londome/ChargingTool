@@ -154,6 +154,12 @@ export interface Route {
   consumption_l_100km: number | null;
   trips_per_year: number | null;
   vehicle_count: number | null;
+  // Physical simulation conditions (per-route overrides for physicsEngine)
+  sim_temperature_c?: number | null;
+  sim_hvac_on?: boolean | null;
+  sim_city_share?: number | null;
+  sim_rural_share?: number | null;
+  sim_hwy_share?: number | null;
 }
 
 export interface Scenario {

@@ -207,7 +207,9 @@ function SliderField({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function Step3Depot() {
-  const { wizard, updateWizardStep3Depot, setWizardStep, lastgangProfile, setLastgangProfile } = useProjectStore();
+  const { wizard, updateWizardStep3Depot, setWizardStep, lastgangProfile, lastgangProjectId, setLastgangProfile } = useProjectStore();
+  // Only show the profile if it belongs to the current project
+  const activeLastgang = lastgangProfile && lastgangProjectId === wizard.projectId ? lastgangProfile : null;
   const saveWizardConfig = useSaveWizardConfig();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -226,10 +228,10 @@ export default function Step3Depot() {
         setLastgangError('Ungültige Auflösung. Die Datei muss 15-Minuten-Intervalle enthalten (96 Zeilen/Tag).');
         return;
       }
-      setLastgangProfile(profile);
+      setLastgangProfile(profile, wizard.projectId);
     };
     reader.readAsText(file, 'UTF-8');
-  }, [wizard.step3Depot?.max_grid_connection_kw, setLastgangProfile]);
+  }, [wizard.step3Depot?.max_grid_connection_kw, wizard.projectId, setLastgangProfile]);
 
   // Total EVs — set synchronously by Step3Mobility when user confirms mobility profile:
   //   manual      → sum of vehicle_count per route
@@ -280,7 +282,8 @@ export default function Step3Depot() {
         config: { ...(wizard as any).wizard_config, step3Depot: data },
       });
     }
-    setWizardStep(5);
+    // Step 4 = Ladeinfrastruktur in all modules that use Step3Depot
+    setWizardStep(4);
   };
 
   return (
@@ -367,7 +370,7 @@ export default function Step3Depot() {
           )}
 
           {/* ── BDEW standard profiles ── */}
-          {!lastgangProfile && (
+          {!activeLastgang && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
                 BDEW-Standardlastprofil auswählen
@@ -401,7 +404,7 @@ export default function Step3Depot() {
                     onClick={() => {
                       const gridKw = watch('max_grid_connection_kw') ?? 100;
                       const profile = bdewToProfile(p.shape, bdewPeakKw, gridKw);
-                      setLastgangProfile(profile);
+                      setLastgangProfile(profile, wizard.projectId);
                       setLastgangError(null);
                       setSelectedBdewId(p.id);
                     }}
@@ -479,7 +482,7 @@ export default function Step3Depot() {
             </div>
           )}
 
-          {!lastgangProfile ? (
+          {!activeLastgang ? (
             <div
               className="border-2 border-dashed border-slate-200 rounded p-5 text-center cursor-pointer hover:border-[#0079C0]/40 hover:bg-[#f0f8ff] transition-colors"
               onClick={() => fileRef.current?.click()}
@@ -499,10 +502,10 @@ export default function Step3Depot() {
               />
             </div>
           ) : (
-            <div className={`p-3 rounded border ${lastgangProfile.peak_kw > lastgangProfile.max_grid_connection_kw ? 'border-amber-200 bg-amber-50' : 'border-[#c8e6c9] bg-[#f4fbf8]'}`}>
+            <div className={`p-3 rounded border ${activeLastgang.peak_kw > activeLastgang.max_grid_connection_kw ? 'border-amber-200 bg-amber-50' : 'border-[#c8e6c9] bg-[#f4fbf8]'}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  {lastgangProfile.peak_kw > lastgangProfile.max_grid_connection_kw
+                  {activeLastgang.peak_kw > activeLastgang.max_grid_connection_kw
                     ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                     : <CheckCircle2 className="h-4 w-4 text-[#043F2E] shrink-0" />}
                   <div>
@@ -512,7 +515,7 @@ export default function Step3Depot() {
                         : 'Lastprofil geladen'}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {lastgangProfile.intervals.length} Intervalle · {lastgangProfile.resolution_min} min · {lastgangProfile.rows_total.toLocaleString('de-DE')} Zeilen
+                      {activeLastgang.intervals.length} Intervalle · {activeLastgang.resolution_min} min · {activeLastgang.rows_total.toLocaleString('de-DE')} Zeilen
                     </p>
                   </div>
                 </div>
@@ -522,9 +525,9 @@ export default function Step3Depot() {
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
                 {[
-                  [lastgangProfile.peak_kw.toFixed(1) + ' kW', 'Spitzenlast'],
-                  [lastgangProfile.avg_kw.toFixed(1) + ' kW', 'Mittlere Last'],
-                  [lastgangProfile.resolution_min + ' min', 'Auflösung'],
+                  [activeLastgang.peak_kw.toFixed(1) + ' kW', 'Spitzenlast'],
+                  [activeLastgang.avg_kw.toFixed(1) + ' kW', 'Mittlere Last'],
+                  [activeLastgang.resolution_min + ' min', 'Auflösung'],
                 ].map(([val, label]) => (
                   <div key={label} className="text-center p-1.5 bg-white rounded border border-slate-200">
                     <p className="font-semibold text-[#001141]">{val}</p>
@@ -532,9 +535,9 @@ export default function Step3Depot() {
                   </div>
                 ))}
               </div>
-              {lastgangProfile.peak_kw > lastgangProfile.max_grid_connection_kw && (
+              {activeLastgang.peak_kw > activeLastgang.max_grid_connection_kw && (
                 <p className="text-xs text-amber-700 mt-2">
-                  Bestehende Spitzenlast ({lastgangProfile.peak_kw.toFixed(0)} kW) überschreitet den Netzanschluss ({lastgangProfile.max_grid_connection_kw} kW). EV-Laden erfordert Lastmanagement.
+                  Bestehende Spitzenlast ({activeLastgang.peak_kw.toFixed(0)} kW) überschreitet den Netzanschluss ({activeLastgang.max_grid_connection_kw} kW). EV-Laden erfordert Lastmanagement.
                 </p>
               )}
             </div>

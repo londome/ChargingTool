@@ -186,7 +186,7 @@ export default function Dashboard() {
                           )}
                           {project.wizard_module === 'ladeprozess' && (
                             <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e6f3fc] text-[#0079C0] border border-blue-200">
-                              Ladeinfrastruktur
+                              Ladeprozess-Simulation
                             </span>
                           )}
                           {project.wizard_module === 'ladeprozess_optimierung' && (

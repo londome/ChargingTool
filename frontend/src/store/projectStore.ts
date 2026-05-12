@@ -123,7 +123,8 @@ interface ProjectStore {
 
   // Depot Lastgang (load profile)
   lastgangProfile: LastgangProfile | null;
-  setLastgangProfile: (profile: LastgangProfile | null) => void;
+  lastgangProjectId: string | null;
+  setLastgangProfile: (profile: LastgangProfile | null, projectId?: string | null) => void;
 
   // UI state
   sidebarCollapsed: boolean;
@@ -247,7 +248,8 @@ export const useProjectStore = create<ProjectStore>()(
       resetWizard: () => set({ wizard: initialWizardState }),
 
       lastgangProfile: null,
-      setLastgangProfile: (profile) => set({ lastgangProfile: profile }),
+      lastgangProjectId: null,
+      setLastgangProfile: (profile, projectId) => set({ lastgangProfile: profile, lastgangProjectId: projectId ?? null }),
 
       sidebarCollapsed: false,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -259,6 +261,7 @@ export const useProjectStore = create<ProjectStore>()(
         activeScenarioId: state.activeScenarioId,
         sidebarCollapsed: state.sidebarCollapsed,
         lastgangProfile: state.lastgangProfile,
+        lastgangProjectId: state.lastgangProjectId,
       }),
     }
   )

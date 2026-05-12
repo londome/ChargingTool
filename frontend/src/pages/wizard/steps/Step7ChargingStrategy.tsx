@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Calendar, Globe, Settings, Info, Loader2 } from 'lucide-react';
+import { Zap, Calendar, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useProjectStore } from '@/store/projectStore';
-import { useRunOptimization } from '@/lib/api';
+import { useRunOptimization, useCreateScenario, useRunSimulation } from '@/lib/api';
+import { ScenarioType, InstallationType } from '@shared/types';
 
 const BIDDING_ZONES: Record<string, string> = {
   DE_LU: 'Deutschland / Luxemburg (DE-LU)',
@@ -23,14 +24,17 @@ function todayISO(): string {
 
 export default function Step7ChargingStrategy() {
   const navigate = useNavigate();
-  const { wizard } = useProjectStore();
+  const { wizard, activeProject, lastgangProfile, lastgangProjectId, setActiveScenarioId, setActiveRunId } = useProjectStore();
+  const activeLastgang = lastgangProfile && lastgangProjectId === wizard.projectId ? lastgangProfile : null;
   const runOptimization = useRunOptimization();
+  const createScenario = useCreateScenario();
+  const runSimulation = useRunSimulation();
 
-  // Pre-filled from wizard
-  const gcpDefault = wizard.step3Depot.max_grid_connection_kw ?? 100;
-  const wallboxDefault = wizard.step4.charging_power_kw ?? 22;
-  const socTargetDefault = wizard.step4.soc_target ?? 80;
-  const socMinDefault = wizard.step4.soc_min ?? 20;
+  // Read directly from wizard — no local overrides
+  const gcpKw     = wizard.step3Depot.max_grid_connection_kw ?? 100;
+  const wallboxKw = wizard.step4.charging_power_kw ?? 22;
+  const socTarget = wizard.step4.soc_target ?? 80;
+  const socMin    = wizard.step4.soc_min ?? 20;
 
   const [dateFrom, setDateFrom] = useState<string>(todayISO());
   const [dateTo, setDateTo] = useState<string>(todayISO());
@@ -44,27 +48,73 @@ export default function Step7ChargingStrategy() {
     return Math.max(1, diff + 1);
   })();
 
-  const projectId = wizard.projectId;
+  // Wizard state is not persisted — fall back to activeProject if wizard was reset (e.g. page reload)
+  const projectId = (wizard.projectId && !wizard.projectId.startsWith('local_'))
+    ? wizard.projectId
+    : activeProject?.id ?? null;
 
   const handleStart = async () => {
-    if (!projectId || projectId.startsWith('local_')) {
+    if (!projectId) {
       setError('Kein gültiges Projekt gefunden. Bitte Schritt 1 abschließen.');
       return;
     }
     setError(null);
     try {
       const multiDay = dateTo > dateFrom;
+
+      // ── 1. Base simulation (Kosten & Emissionen / Tourenanalyse / Ladevorgang) ──
+      // Create a default Basis scenario and run the simulation so those result pages
+      // have data — exactly what Step6Scenarios does in the base Ladeprozess module.
+      try {
+        await fetch(`/api/scenarios/project/${projectId}`, { method: 'DELETE' });
+        const depot = wizard.step3Depot;
+        const scenario = await createScenario.mutateAsync({
+          project_id: projectId,
+          name: 'Basis-Szenario',
+          type: ScenarioType.BASELINE,
+          notes: 'Automatisch erstellt durch Ladeprozess Optimierung (V1X)',
+          electricity_price: wizard.step4?.electricity_price ?? 0.28,
+          diesel_price: 1.75,
+          grid_emission_factor: wizard.step4?.grid_emission_factor ?? 0.380,
+          charging_power_kw: wallboxKw,
+          charging_efficiency: wizard.step4?.charging_efficiency ?? 0.92,
+          electrification_pct: 100,
+          allow_public_charging: false,
+          wallbox_price_eur: depot?.wallbox_price_eur ?? 1200,
+          installation_type: (depot?.installation_type ?? InstallationType.STANDARD) as InstallationType,
+          winter_surcharge: 0,
+          temperature_factor: 1.0,
+          soc_start: wizard.step4?.soc_start ?? 90,
+          soc_min: socMin,
+          soc_target: socTarget,
+        });
+        const simRun = await runSimulation.mutateAsync({
+          project_id: projectId,
+          scenario_id: scenario.id,
+        });
+        setActiveScenarioId(scenario.id);
+        setActiveRunId(simRun.run_id);
+      } catch (simErr) {
+        console.warn('Basis-Simulation konnte nicht gestartet werden:', simErr);
+        // Non-fatal — optimization continues regardless
+      }
+
+      // ── 2. LP Charging optimization ──────────────────────────────────────────
+      // Pass depot background load profile so LP solver reserves headroom per slot
+      const depotProfileKw = activeLastgang?.intervals?.length === 96
+        ? activeLastgang.intervals.map(i => i.power_kw)
+        : undefined;
       await runOptimization.mutateAsync({
         project_id: projectId,
         date: dateFrom,
         ...(multiDay ? { date_to: dateTo } : {}),
         bidding_zone: biddingZone,
-        gcp_max_kw: gcpDefault,
-        wallbox_power_kw: wallboxDefault,
-        soc_target_pct: socTargetDefault,
-        soc_min_pct: socMinDefault,
-        // times and EV specs resolved on the backend from routes + ev_models
+        gcp_max_kw: gcpKw,
+        wallbox_power_kw: wallboxKw,
+        soc_target_pct: socTarget,
+        soc_min_pct: socMin,
         selected_ev_ids: wizard.step5SelectedEVIds,
+        ...(depotProfileKw ? { depot_profile_kw: depotProfileKw } : {}),
       });
       navigate(`/projekte/${projectId}/ergebnisse/optimierung`);
     } catch (e: unknown) {
@@ -158,36 +208,6 @@ export default function Step7ChargingStrategy() {
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      {/* Wizard params summary (read-only) */}
-      <div className="rounded border border-slate-200 bg-slate-50 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-[#001141]">
-          <Settings className="w-4 h-4 text-slate-400" />
-          Parameter aus Wizard (Schritt 3 &amp; 4)
-        </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-slate-500">Max. Netzanschluss (GCP)</span>
-            <span className="font-medium text-[#001141]">{gcpDefault} kW</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">Wallbox-Leistung</span>
-            <span className="font-medium text-[#001141]">{wallboxDefault} kW</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">SOC-Ziel</span>
-            <span className="font-medium text-[#001141]">{socTargetDefault} %</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">Min. SOC bei Ankunft</span>
-            <span className="font-medium text-[#001141]">{socMinDefault} %</span>
-          </div>
-        </div>
-        <div className="flex items-start gap-2 text-xs text-slate-500 pt-1 border-t border-slate-200">
-          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          <span>Diese Werte stammen aus den vorherigen Wizard-Schritten und können dort angepasst werden.</span>
-        </div>
       </div>
 
       {error && (

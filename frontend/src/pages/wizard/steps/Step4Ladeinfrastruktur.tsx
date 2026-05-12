@@ -29,6 +29,7 @@ const INSTALLATION_OPTIONS = [
 const FIELDS = [
   { key: 'charging_power_kw',    label: 'Maximale Ladeleistung (Depot)', unit: 'kW',         min: 0,    max: 150,  step: 0.1,  tooltip: 'Übliche AC-Werte: 3,7 kW (1-phasig), 11 kW oder 22 kW. DC: 50–150 kW' },
   { key: 'soc_target',           label: 'Ziel-SOC (Abfahrt)',            unit: '%',           min: 50,   max: 100,  step: 5,    tooltip: 'SOC bei Depotladung und Tourstart. Empfohlen: 80–90 % für Akkulanglebigkeit' },
+  { key: 'soc_min',             label: 'Min. SOC (Ankunft / Reserve)',  unit: '%',           min: 5,    max: 40,   step: 5,    tooltip: 'Mindest-SOC bei Rückkehr ins Depot als Sicherheitsreserve. Empfohlen: 15–20 %' },
   { key: 'charging_efficiency',  label: 'Ladeeffizienz',                 unit: '(0–1)',       min: 0.8,  max: 1.0,  step: 0.01, tooltip: 'Wirkungsgrad Netz→Batterie. Typisch 0,88–0,95 für AC-Laden' },
   { key: 'electricity_price',    label: 'Strompreis',                    unit: '€/kWh',      min: 0.05, max: 0.60, step: 0.01, tooltip: 'Gewerblicher Strompreis inkl. Steuern und Abgaben. Ø Deutschland 2024: ~0,25 €/kWh' },
   { key: 'grid_emission_factor', label: 'Netz-Emissionsfaktor',          unit: 'kg CO₂e/kWh',min: 0.0,  max: 1.0,  step: 0.01, tooltip: 'Spezifische CO₂-Emissionen des Strommixes. Deutschland 2023: 0,380 kg/kWh (UBA)' },
@@ -291,6 +292,7 @@ export default function Step4Ladeinfrastruktur() {
               ['Ladepunkte',   `${numLP} LP`],
               ['Ladeleistung', `${watch('charging_power_kw')} kW`],
               ['Ziel-SOC',     `${watch('soc_target')} %`],
+              ['Min. SOC',     `${watch('soc_min')} %`],
               ['Strompreis',   `${Number(watch('electricity_price')).toFixed(2)} €/kWh`],
               ['CO₂-Faktor',   `${Number(watch('grid_emission_factor')).toFixed(3)} kg/kWh`],
               ['Wallbox',      `${(wizard.step3Depot?.wallbox_price_eur ?? 1200).toLocaleString('de-DE')} €/LP`],

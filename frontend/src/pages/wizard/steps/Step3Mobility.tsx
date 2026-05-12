@@ -56,6 +56,12 @@ interface FleetEntry {
   departure_time: string;
   arrival_time: string;
   stops: number;
+  // Physical simulation conditions
+  sim_temperature_c: number;
+  sim_hvac_on: boolean;
+  sim_city_share: number;
+  sim_rural_share: number;
+  sim_hwy_share: number;
 }
 
 
@@ -130,7 +136,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
   const [expandedConditions, setExpandedConditions] = useState<Set<number>>(new Set());
 
   // ── Fleet level tab state ────────────────────────────────────────────────
-  const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([{
+  const DEFAULT_FLEET_ENTRY: FleetEntry = {
     segment: VehicleSegment.LARGE_VAN,
     fuel_type: FuelType.DIESEL,
     vehicle_count: 10,
@@ -143,7 +149,14 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
     departure_time: '06:00',
     arrival_time: '18:00',
     stops: 5,
-  }]);
+    sim_temperature_c: 15,
+    sim_hvac_on: false,
+    sim_city_share: 0.5,
+    sim_rural_share: 0.3,
+    sim_hwy_share: 0.2,
+  };
+  const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([{ ...DEFAULT_FLEET_ENTRY }]);
+  const [expandedFleetConditions, setExpandedFleetConditions] = useState<Set<number>>(new Set());
 
   // ── CSV tab state ────────────────────────────────────────────────────────
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
@@ -337,6 +350,7 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
   };
 
   const addFleetEntry = () => setFleetEntries([...fleetEntries, {
+    ...DEFAULT_FLEET_ENTRY,
     segment: VehicleSegment.MEDIUM_VAN,
     fuel_type: FuelType.DIESEL,
     vehicle_count: 5,
@@ -406,6 +420,11 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
           start_time: e.departure_time,
           end_time: e.arrival_time,
           source_type: 'fleet_level' as const,
+          sim_temperature_c: e.sim_temperature_c,
+          sim_hvac_on: e.sim_hvac_on,
+          sim_city_share: e.sim_city_share,
+          sim_rural_share: e.sim_rural_share,
+          sim_hwy_share: e.sim_hwy_share,
         })),
       }).catch(console.warn);
     }
@@ -728,8 +747,8 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                     )}
                   </div>
 
-                  {/* Fahrbedingungen — only shown in Reichweiten mode */}
-                  {isReichweitenMode && (
+                  {/* Fahrbedingungen — per-route physical conditions for all modules */}
+                  {(
                     <div className="mt-3 border-t border-slate-100 pt-3">
                       <button
                         type="button"
@@ -922,6 +941,86 @@ export default function Step3Mobility({ onFinish, isFinishing }: Step3MobilityPr
                         onChange={e => updateFleetEntry(i, 'arrival_time', e.target.value)} />
                     </div>
                   </div>
+                  {/* Fahrbedingungen — fleet_level */}
+                  <div className="mt-3 border-t border-slate-100 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedFleetConditions(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; })}
+                      className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-[#001141] transition-colors group"
+                    >
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Thermometer className="h-3.5 w-3.5 text-[#0079C0]" />
+                        Fahrbedingungen
+                      </span>
+                      <span className="flex items-center gap-2 text-slate-400">
+                        <span>{entry.sim_temperature_c > 0 ? '+' : ''}{entry.sim_temperature_c}°C</span>
+                        <span>·</span>
+                        <span>HVAC {entry.sim_hvac_on ? 'Ein' : 'Aus'}</span>
+                        <span>·</span>
+                        <span>Stadt {Math.round(entry.sim_city_share * 100)}% · Land {Math.round(entry.sim_rural_share * 100)}% · BAB {Math.round(entry.sim_hwy_share * 100)}%</span>
+                        {expandedFleetConditions.has(i) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </span>
+                    </button>
+                    {expandedFleetConditions.has(i) && (
+                      <div className="mt-3 rounded border border-slate-200 bg-slate-50 divide-y divide-slate-100">
+                        <div className="flex items-center gap-4 px-4 py-3">
+                          <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1.5"><Thermometer className="h-3.5 w-3.5 text-slate-400" /> Temperatur</span>
+                          <input type="range" min={-20} max={40} step={1} value={entry.sim_temperature_c}
+                            onChange={e => updateFleetEntry(i, 'sim_temperature_c', Number(e.target.value))}
+                            className="flex-1 accent-[#0079C0] h-1.5" />
+                          <span className={cn('text-xs font-semibold tabular-nums w-12 text-right',
+                            entry.sim_temperature_c < 0 ? 'text-[#0079C0]' : entry.sim_temperature_c > 28 ? 'text-[#C45600]' : 'text-slate-700')}>
+                            {entry.sim_temperature_c > 0 ? '+' : ''}{entry.sim_temperature_c}°C
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 px-4 py-3">
+                          <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1.5"><Wind className="h-3.5 w-3.5 text-slate-400" /> HVAC</span>
+                          <div className="flex gap-2">
+                            {([false, true] as const).map(val => (
+                              <button key={String(val)} type="button"
+                                onClick={() => updateFleetEntry(i, 'sim_hvac_on', val)}
+                                className={cn('px-4 py-1 rounded text-xs border transition-colors',
+                                  entry.sim_hvac_on === val ? 'bg-[#0079C0] text-white border-[#0079C0]' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400')}>
+                                {val ? 'Ein' : 'Aus'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="px-4 py-3 space-y-2.5">
+                          <span className="text-xs text-slate-500 font-medium">Nutzungsmix</span>
+                          {[
+                            { key: 'sim_city_share' as const, label: 'Stadt', color: 'accent-[#0079C0]', val: entry.sim_city_share },
+                            { key: 'sim_rural_share' as const, label: 'Landstraße', color: 'accent-[#043F2E]', val: entry.sim_rural_share },
+                            { key: 'sim_hwy_share' as const, label: 'Autobahn', color: 'accent-[#C45600]', val: entry.sim_hwy_share },
+                          ].map(({ key, label, color, val }) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <span className="text-xs text-slate-500 w-20 shrink-0">{label}</span>
+                              <input type="range" min={0} max={100} step={5} value={Math.round(val * 100)}
+                                onChange={e => {
+                                  const v = Number(e.target.value) / 100;
+                                  const others = [
+                                    { k: 'sim_city_share' as const, v: entry.sim_city_share },
+                                    { k: 'sim_rural_share' as const, v: entry.sim_rural_share },
+                                    { k: 'sim_hwy_share' as const, v: entry.sim_hwy_share },
+                                  ].filter(o => o.k !== key);
+                                  const oSum = others[0].v + others[1].v;
+                                  const rem = 1 - v;
+                                  const r0 = oSum > 0 ? Math.round(rem * (others[0].v / oSum) * 100) / 100 : rem / 2;
+                                  const r1 = Math.round((rem - r0) * 100) / 100;
+                                  const patch: Record<string, number> = { [key]: v, [others[0].k]: r0, [others[1].k]: r1 };
+                                  const updated = [...fleetEntries];
+                                  updated[i] = { ...updated[i], ...patch };
+                                  setFleetEntries(updated);
+                                }}
+                                className={cn('flex-1 h-1.5', color)} />
+                              <span className="text-xs font-semibold text-slate-700 w-8 text-right tabular-nums">{Math.round(val * 100)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Tour-Info */}
                   {(entry.departure_time && entry.arrival_time) || (entry.trips_per_year > 0 && entry.annual_km > 0) ? (
                     <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">

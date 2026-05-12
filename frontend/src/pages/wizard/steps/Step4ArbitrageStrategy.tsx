@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BatteryCharging, Loader2, Info } from 'lucide-react';
 import { useProjectStore } from '@/store/projectStore';
-import { useRunArbitrage } from '@/lib/api';
+import { useRunArbitrage, useCreateScenario, useRunSimulation } from '@/lib/api';
+import { ScenarioType, InstallationType } from '@shared/types';
 
 const BIDDING_ZONES: Record<string, string> = {
   DE_LU: 'Deutschland/Luxemburg (DE-LU)',
@@ -15,8 +16,11 @@ const BIDDING_ZONES: Record<string, string> = {
 
 export default function Step4ArbitrageStrategy() {
   const navigate = useNavigate();
-  const { wizard } = useProjectStore();
+  const { wizard, activeProject, lastgangProfile, lastgangProjectId, setActiveScenarioId, setActiveRunId } = useProjectStore();
+  const activeLastgang = lastgangProfile && lastgangProjectId === wizard.projectId ? lastgangProfile : null;
   const runArbitrage = useRunArbitrage();
+  const createScenario = useCreateScenario();
+  const runSimulation = useRunSimulation();
 
   const today = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(today);
@@ -32,7 +36,9 @@ export default function Step4ArbitrageStrategy() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const projectId = wizard.projectId;
+  const projectId = (wizard.projectId && !wizard.projectId.startsWith('local_'))
+    ? wizard.projectId
+    : activeProject?.id ?? null;
   const gcpMaxKw = wizard.step3Depot.max_grid_connection_kw;
   const wallboxPowerKw = wizard.step4.charging_power_kw;
   const socTarget = wizard.step4.soc_target;
@@ -45,6 +51,46 @@ export default function Step4ArbitrageStrategy() {
     setError(null);
     try {
       const multiDay = dateTo > dateFrom;
+
+      // ── 1. Base simulation (Kosten & Emissionen / Tourenanalyse / Ladevorgang) ──
+      try {
+        await fetch(`/api/scenarios/project/${projectId}`, { method: 'DELETE' });
+        const depot = wizard.step3Depot;
+        const scenario = await createScenario.mutateAsync({
+          project_id: projectId,
+          name: 'Basis-Szenario',
+          type: ScenarioType.BASELINE,
+          notes: 'Automatisch erstellt durch Ladeprozess Bidirektional (V2X)',
+          electricity_price: wizard.step4?.electricity_price ?? 0.28,
+          diesel_price: 1.75,
+          grid_emission_factor: wizard.step4?.grid_emission_factor ?? 0.380,
+          charging_power_kw: wallboxPowerKw,
+          charging_efficiency: wizard.step4?.charging_efficiency ?? 0.92,
+          electrification_pct: 100,
+          allow_public_charging: false,
+          wallbox_price_eur: depot?.wallbox_price_eur ?? 1200,
+          installation_type: (depot?.installation_type ?? InstallationType.STANDARD) as InstallationType,
+          winter_surcharge: 0,
+          temperature_factor: 1.0,
+          soc_start: wizard.step4?.soc_start ?? 90,
+          soc_min: socMin,
+          soc_target: socTarget,
+        });
+        const simRun = await runSimulation.mutateAsync({
+          project_id: projectId,
+          scenario_id: scenario.id,
+        });
+        setActiveScenarioId(scenario.id);
+        setActiveRunId(simRun.run_id);
+      } catch (simErr) {
+        console.warn('Basis-Simulation konnte nicht gestartet werden:', simErr);
+        // Non-fatal — arbitrage continues regardless
+      }
+
+      // ── 2. V2G Arbitrage optimization ────────────────────────────────────────
+      const depotProfileKw = activeLastgang?.intervals?.length === 96
+        ? activeLastgang.intervals.map(i => i.power_kw)
+        : undefined;
       await runArbitrage.mutateAsync({
         project_id: projectId,
         date: dateFrom,
@@ -55,6 +101,7 @@ export default function Step4ArbitrageStrategy() {
         soc_target_pct: socTarget,
         soc_min_pct: socMin,
         selected_ev_ids: selectedEvIds,
+        ...(depotProfileKw ? { depot_profile_kw: depotProfileKw } : {}),
       });
       navigate(`/projekte/${projectId}/ergebnisse/arbitrage`);
     } catch (e) {

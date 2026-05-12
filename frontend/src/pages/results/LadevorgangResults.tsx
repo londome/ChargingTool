@@ -29,12 +29,21 @@ export default function LadevorgangResults() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-      <div>
+      <div className="flex items-center gap-3 flex-wrap">
         <h1 className="text-2xl font-light text-[#001141]">Ladevorgang</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Ladeinfrastruktur, Lastgang und SOC-Verlauf der Flotte
-        </p>
+        {(wizard.wizardModule === 'ladeprozess_optimierung' || wizard.wizardModule === 'ladeprozess_bidirektional') && (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+            Referenzszenario
+          </span>
+        )}
       </div>
+      <p className="text-sm text-slate-500 mt-1">
+        {wizard.wizardModule === 'ladeprozess_optimierung'
+          ? 'Unoptimiertes Basis-Laden – Vergleich zur LP-Ladeoptimierung'
+          : wizard.wizardModule === 'ladeprozess_bidirektional'
+          ? 'Konventionelles Laden ohne V2G – Vergleich zur Energiearbitrage'
+          : 'Ladeinfrastruktur, Lastgang und SOC-Verlauf der Flotte'}
+      </p>
 
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

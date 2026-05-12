@@ -22,7 +22,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Request failed' }));
+    const error = await res.json().catch(() => ({ error: `HTTP ${res.status} – ${res.statusText || 'Request failed'}` }));
     throw new Error(error.error || `HTTP ${res.status}`);
   }
   const json = await res.json();
@@ -541,6 +541,7 @@ export interface OptimizationRunInput {
   arrival_time?: string;           // optional — read from routes if absent
   departure_time?: string;         // optional — read from routes if absent
   selected_ev_ids?: string[];      // from wizard Step 5
+  depot_profile_kw?: number[];     // 96-value background depot load [kW]
 }
 
 export interface VehicleOptResult {
@@ -548,9 +549,12 @@ export interface VehicleOptResult {
   vehicle_name: string;
   schedule_kw: number[];
   soc_curve_pct: number[];
-  energy_kwh: number;          // grid energy drawn (incl. charging losses)
-  battery_energy_kwh?: number; // energy stored in battery (= route consumption)
+  energy_kwh: number;
+  battery_energy_kwh?: number;
   cost_eur: number;
+  arrival_interval?: number;
+  departure_interval?: number;
+  departure_interval_raw?: number;
 }
 
 export interface OptimizationRunResult {
@@ -561,6 +565,7 @@ export interface OptimizationRunResult {
   fleet_power_kw: number[];
   naive_fleet_power_kw?: number[];
   naive_total_cost_eur?: number;
+  depot_profile_kw?: number[];
   computation_time_ms: number;
   date: string;
   prices_15min: number[];
@@ -595,6 +600,7 @@ export function useOptimizationLatest(projectId: string | undefined) {
       }>(`/optimization/project/${projectId}/latest`),
     enabled: !!projectId,
     retry: 1,
+    staleTime: 0, // always refetch on mount so new runs are picked up immediately
     refetchInterval: (query) => {
       const status = (query.state.data as { status?: string } | undefined)?.status;
       if (!status || status === 'pending' || status === 'running') return 2000;
@@ -664,6 +670,7 @@ export function useArbitrageLatest(projectId: string | undefined) {
       }>(`/arbitrage/project/${projectId}/latest`),
     enabled: !!projectId,
     retry: 1,
+    staleTime: 0, // always refetch on mount so new runs are picked up immediately
     refetchInterval: (query) => {
       const status = (query.state.data as { status?: string } | undefined)?.status;
       if (!status || status === 'pending' || status === 'running') return 2000;

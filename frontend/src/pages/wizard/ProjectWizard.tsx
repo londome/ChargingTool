@@ -330,7 +330,7 @@ export default function ProjectWizard() {
         {currentStep === 1 && <Step1ProjectContext />}
 
         {currentStep === 2 && wizard.reuseReichweitenProjectId ? (
-          <ReuseMobilityReadOnly onNext={() => setWizardStep(4)} />
+          <ReuseMobilityReadOnly onNext={() => setWizardStep(wizard.wizardModule === 'ladeprozess' ? 4 : 3)} />
         ) : currentStep === 2 ? (
           <Step3Mobility
             onFinish={wizard.wizardModule === 'reichweiten' ? handleMobilityNextReichweitenModule : undefined}
